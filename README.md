@@ -1,275 +1,180 @@
 <div align="center">
 
-<picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://github.com/user-attachments/assets/99cb6303-64e4-4bed-bf3f-35735353e6de" />
-    <source media="(prefers-color-scheme: light)" srcset="https://github.com/user-attachments/assets/a5dbf71c-c509-4c4f-80f4-be88a1943b0a" />
-    <img alt="Logo" src="https://github.com/user-attachments/assets/99cb6303-64e4-4bed-bf3f-35735353e6de" />
-</picture>
+# 📚 Bookmarks Manager
 
 ![](https://img.shields.io/badge/React-61DAFB?style=flat-square&logo=react&logoColor=black)
 ![](https://img.shields.io/badge/Typescript-3178C6?style=flat-square&logo=typescript&logoColor=white)
 ![](https://badges.aleen42.com/src/vitejs.svg)
+![](https://img.shields.io/badge/Chrome-4285F4?style=flat-square&logo=googlechrome&logoColor=white)
+![](https://img.shields.io/badge/Firefox-FF7139?style=flat-square&logo=firefox&logoColor=white)
 
-![GitHub action badge](https://github.com/Jonghakseo/chrome-extension-boilerplate-react-vite/actions/workflows/build-zip.yml/badge.svg)
-![GitHub action badge](https://github.com/Jonghakseo/chrome-extension-boilerplate-react-vite/actions/workflows/lint.yml/badge.svg)
-
-<a href="https://discord.gg/4ERQ6jgV9a" target="_blank"><img src="https://discord.com/api/guilds/1263404974830915637/widget.png"/></a>
-
-> This boilerplate
-> has [Legacy version](https://github.com/Jonghakseo/chrome-extension-boilerplate-react-vite/tree/legacy)
+一个功能强大的浏览器书签管理扩展，帮助您高效管理、搜索和整理书签。
 
 </div>
 
 > [!NOTE]
-> This project is listed in the [Awesome Vite](https://github.com/vitejs/awesome-vite)
+> 基于 [Chrome Extension Boilerplate React Vite](https://github.com/Jonghakseo/chrome-extension-boilerplate-react-vite) 开发
 
-> [!TIP]
-> Share storage state between all pages
->
-> https://github.com/user-attachments/assets/3b8e189f-6443-490e-a455-4f9570267f8c
+## 目录
 
-## Table of Contents
+- [简介](#intro)
+- [功能特性](#features)
+- [安装使用](#installation)
+    - [Chrome 浏览器](#installation-chrome)
+    - [Firefox 浏览器](#installation-firefox)
+- [开发指南](#development)
+- [项目结构](#structure)
+- [贡献指南](#contributing)
 
-- [Intro](#intro)
-- [Features](#features)
-- [Structure](#structure)
-    - [ChromeExtension](#structure-chrome-extension)
-    - [Packages](#structure-packages)
-    - [Pages](#structure-pages)
-- [Installation](#installation)
-    - [Chrome](#installation-chrome)
-    - [Firefox](#installation-firefox)
-- [Install dependency](#install-dependency)
-    - [For root](#install-dependency-for-root)
-    - [For module](#install-dependency-for-module)
-- [Environment variables](#env-variables)
-    - [Add new](#env-variables-new)
-    - [Set via CLI](#env-variables-cli-set)
-- [Troubleshooting](#troubleshooting)
-    - [Hot module reload seems to have frozen](#hot-module-reload-seems-to-have-frozen)
-    - [Imports not resolving correctly](#imports-not-resolving-correctly)
-- [Community](#community)
-- [Debugging](#debugging)
-- [Reference](#reference)
-- [Star History](#star-history)
-- [Contributors](#contributors)
+## 简介 <a name="intro"></a>
 
-## Intro
+Bookmarks Manager 是一个现代化的浏览器书签管理扩展，提供了直观的界面和强大的功能，帮助用户更好地组织和管理浏览器书签。无论是日常浏览还是研究工作，都能让您的书签管理变得简单高效。
 
-This boilerplate helps you create Chrome/Firefox extensions using React and Typescript. It improves
-the build speed and development experience by using Vite and Turborepo.
+## 功能特性 <a name="features"></a>
 
-## Features
+### 📖 核心功能
+- **智能搜索** - 实时搜索书签标题和 URL
+- **批量操作** - 支持批量选择、删除书签
+- **拖拽排序** - 通过拖拽轻松调整书签位置和层级
+- **文件夹管理** - 一键展开/折叠所有文件夹
+- **重复检测** - 自动检测并清理重复的书签
+- **数据统计** - 实时显示书签总数、文件夹数量等统计信息
+- **导入导出** - 支持 JSON 格式的书签数据导入导出
 
-- [React](https://reactjs.org/)
-- [TypeScript](https://www.typescriptlang.org/)
-- [Tailwindcss](https://tailwindcss.com/)
-- [Vite](https://vitejs.dev/) with [Rollup](https://rollupjs.org/)
-- [Turborepo](https://turbo.build/repo)
-- [Prettier](https://prettier.io/)
-- [ESLint](https://eslint.org/)
-- [Chrome Extensions Manifest Version 3](https://developer.chrome.com/docs/extensions/mv3/intro/)
-- [Custom i18n package](/packages/i18n/)
-- [Custom HMR (Hot Module Rebuild) plugin](/packages/hmr)
-- [End-to-end testing with WebdriverIO](https://webdriver.io/)
+### 🛠 技术栈
+- **框架**: React 18 + TypeScript
+- **样式**: Tailwind CSS
+- **构建**: Vite + Turborepo
+- **拖拽**: @dnd-kit
+- **图标**: Lucide React
+- **扩展**: Chrome Extensions Manifest V3
 
-## Installation
+## 安装使用 <a name="installation"></a>
 
-1. Clone this repository.( ```git clone https://github.com/Jonghakseo/chrome-extension-boilerplate-react-vite``` )
-2. Ensure your node version is >= than in `.nvmrc` file, recommend to use [nvm](https://github.com/nvm-sh/nvm?tab=readme-ov-file#intro)
-3. Edit `/packages/i18n/locales/`{your locale(s)}/`messages.json`
-4. In the objects `extensionDescription` and `extensionName`, change the `message` fields (leave `description` alone)
-5. Install pnpm globally: `npm install -g pnpm`
-6. Run `pnpm install`
-7. Check if you have that configuration in your IDE/Editor:
-    - <b>VS Code</b>:
-        - Installed [ESLint extension](https://marketplace.visualstudio.com/items?itemName=dbaeumer.vscode-eslint)
-        - Installed [Prettier extension](https://marketplace.visualstudio.com/items?itemName=esbenp.prettier-vscode)
-        - Enabled `Typescript Workbench version` in settings:
-            - CTRL + SHIFT + P -> Search: `Typescript: Select Typescript version...` -> `Use Workbench version`
-            - [Read more](https://code.visualstudio.com/docs/languages/typescript#_using-newer-typescript-versions)
-        - Optional, for imports to work correctly in WSL, you might need to install the [Remote - WSL](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-wsl) extension and connect to WSL remotely from VS Code. See overview section in the extension page for more information.
-    - <b>WebStorm</b>:
-      - Configured [ESLint](https://www.jetbrains.com/help/webstorm/eslint.html#ws_eslint_configure_run_eslint_on_save)
-      - Configured [Prettier](https://prettier.io/docs/en/webstorm.html)
-      - Optional, but useful `File | Settings | Tools | Actions on Save`\
-      -> `Optimize imports` and `Reformat code`
-8. Run `pnpm update-version <version>` for change the `version` to the desired version of your extension.
+### 开发环境准备
 
-> [!IMPORTANT]
-> On Windows, make sure you have WSL enabled and Linux distribution (e.g. Ubuntu) installed on WSL.
-> 
-> [Installation Guide](https://learn.microsoft.com/en-us/windows/wsl/install)
+1. 克隆仓库
+```bash
+git clone https://github.com/your-username/bookmarks-manager.git
+cd bookmarks-manager
+```
+2. 安装依赖
+```bash
+# 安装 pnpm（如果还没有安装）
+npm install -g pnpm
 
-<b>Then, depending on the target browser:</b>
+# 安装项目依赖
+pnpm install
+```
+3. 启动开发服务器
+```bash
+# Chrome 开发模式
+pnpm dev
 
-### For Chrome: <a name="installation-chrome"></a>
+# Firefox 开发模式
+pnpm dev:firefox
+```
 
-1. Run:
-    - Dev: `pnpm dev` (on Windows, you should run as administrator;
-      see [issue#456](https://github.com/Jonghakseo/chrome-extension-boilerplate-react-vite/issues/456))
-    - Prod: `pnpm build`
-2. Open in browser - `chrome://extensions`
-3. Check - <kbd>Developer mode</kbd>
-4. Click - <kbd>Load unpacked</kbd> in the upper left corner
-5. Select the `dist` directory from the boilerplate project
+### Chrome 浏览器 <a name="installation-chrome"></a>
 
-### For Firefox: <a name="installation-firefox"></a>
+1. 打开 Chrome 浏览器，访问 `chrome://extensions`
+2. 打开右上角的 **开发者模式**
+3. 点击 **加载已解压的扩展程序**
+4. 选择项目目录下的 `dist` 文件夹
+5. 扩展安装成功后，点击扩展图标即可使用
 
-1. Run:
-    - Dev: `pnpm dev:firefox`
-    - Prod: `pnpm build:firefox`
-2. Open in browser - `about:debugging#/runtime/this-firefox`
-3. Click - <kbd>Load Temporary Add-on...</kbd> in the upper right corner
-4. Select the `./dist/manifest.json` file from the boilerplate project
+### Firefox 浏览器 <a name="installation-firefox"></a>
+
+1. 打开 Firefox 浏览器，访问 `about:debugging#/runtime/this-firefox`
+2. 点击 **临时载入附加组件**
+3. 选择项目目录下的 `dist/manifest.json` 文件
+4. 扩展安装成功后即可使用
 
 > [!NOTE]
-> In Firefox, you load add-ons in temporary mode. That means they'll disappear after each browser close. You have to
-> load the add-on on every browser launch.
+> Firefox 中的临时扩展会在浏览器关闭后失效，需要重新加载
 
-## Install dependency for turborepo: <a name="install-dependency"></a>
+## 开发指南 <a name="development"></a>
 
-### For root: <a name="install-dependency-for-root"></a>
+### 常用命令
 
-1. Run `pnpm i <package> -w`
+```bash
+# 开发
+pnpm dev              # Chrome 开发模式
+pnpm dev:firefox      # Firefox 开发模式
 
-### For module: <a name="install-dependency-for-module"></a>
+# 构建
+pnpm build            # 构建 Chrome 扩展
+pnpm build:firefox    # 构建 Firefox 扩展
 
-1. Run `pnpm i <package> -F <module name>`
+# 打包
+pnpm zip              # 打包 Chrome 扩展
+pnpm zip:firefox      # 打包 Firefox 扩展
 
-`package` - Name of the package you want to install e.g. `nodemon` \
-`module-name` - You can find it inside each `package.json` under the key `name`, e.g. `@extension/content-script`, you
-can use only `content-script` without `@extension/` prefix
+# 代码质量
+pnpm lint             # 运行 ESLint
+pnpm lint:fix         # 自动修复 lint 问题
+pnpm format           # 格式化代码
+pnpm type-check       # TypeScript 类型检查
 
-## How do I disable modules I'm not using?
+# 模块管理
+pnpm module-manager   # 管理扩展模块
+```
 
-[Read here](packages/module-manager/README.md)
+### 添加依赖
 
-## Environment variables
+```bash
+# 根目录依赖
+pnpm i <package> -w
 
-Read: [Env Documentation](packages/env/README.md)
+# 特定模块依赖
+pnpm i <package> -F <module-name>
+```
 
-## Boilerplate structure <a name="structure"></a>
+## 项目结构 <a name="structure"></a>
 
-### Chrome extension <a name="structure-chrome-extension"></a>
+```
+bookmarks-manager/
+├── chrome-extension/       # 扩展核心配置
+│   ├── manifest.ts        # Manifest V3 配置
+│   └── src/background/    # 后台脚本
+├── pages/                 # 扩展页面
+│   ├── options/          # 选项页面（书签管理器主界面）
+│   │   └── src/
+│   │       └── components/
+│   │           ├── BookmarkManager.tsx    # 主管理组件
+│   │           ├── BookmarkTree.tsx       # 书签树形结构
+│   │           ├── BookmarkFolder.tsx     # 文件夹组件
+│   │           ├── BookmarkItem.tsx       # 书签项组件
+│   │           ├── BookmarkIcon.tsx       # 图标组件
+│   │           └── BatchOperationBar.tsx  # 批量操作栏
+│   ├── popup/            # 工具栏弹出页面
+│   └── side-panel/       # 侧边栏页面
+├── packages/             # 共享包
+│   ├── storage/         # Chrome 存储 API 封装
+│   ├── ui/             # UI 组件库
+│   └── shared/         # 共享工具和类型
+└── dist/               # 构建输出目录
+```
 
-The extension lives in the `chrome-extension` directory and includes the following files:
+## 贡献指南 <a name="contributing"></a>
 
-- [`manifest.ts`](chrome-extension/manifest.ts) - script that outputs the `manifest.json`
-- [`src/background`](chrome-extension/src/background) - [background script](https://developer.chrome.com/docs/extensions/mv3/background_pages/)
-  (`background.service_worker` in manifest.json)
-- [`public`](chrome-extension/public/) - icons referenced in the manifest; content CSS for user's page injection
+欢迎贡献代码！请遵循以下步骤：
 
-> [!IMPORTANT]
-> To facilitate development, the boilerplate is configured to "Read and change all your data on all websites".
-> In production, it's best practice to limit the premissions to only the strictly necessary websites. See
-> [Declaring permissions](https://developer.chrome.com/docs/extensions/develop/concepts/declare-permissions)
-> and edit `manifest.js` accordingly.
+1. Fork 本仓库
+2. 创建您的特性分支 (`git checkout -b feature/AmazingFeature`)
+3. 提交您的更改 (`git commit -m 'Add some AmazingFeature'`)
+4. 推送到分支 (`git push origin feature/AmazingFeature`)
+5. 打开一个 Pull Request
 
-### Pages <a name="structure-pages"></a>
+## 许可证
 
-Code that is transpiled to be part of the extension lives in the [pages](pages) directory.
+MIT License - 详见 [LICENSE](LICENSE) 文件
 
-- [`content`](pages/content) - Scripts injected into specified pages (You can see it in console)
-- [`content-ui`](pages/content-ui) - React Components injected into specified pages (You can see it at the very bottom of pages)
-- [`content-runtime`](pages/content-runtime/src/) - [injected content scripts](https://developer.chrome.com/docs/extensions/develop/concepts/content-scripts#functionality)
-  This can be injected from e.g. `popup` like standard `content`
-- [`devtools`](pages/devtools/) - [extend the browser DevTools](https://developer.chrome.com/docs/extensions/how-to/devtools/extend-devtools#creating)
-  (`devtools_page` in manifest.json)
-- [`devtools-panel`](pages/devtools-panel/) - [DevTools panel](https://developer.chrome.com/docs/extensions/reference/api/devtools/panels)
-  for [devtools](pages/devtools/src/index.ts)
-- [`new-tab`](pages/new-tab/) - [override the default New Tab page](https://developer.chrome.com/docs/extensions/develop/ui/override-chrome-pages)
-  (`chrome_url_overrides.newtab` in manifest.json)
-- [`options`](pages/options/) - [options page](https://developer.chrome.com/docs/extensions/develop/ui/options-page)
-  (`options_page` in manifest.json)
-- [`popup`](pages/popup/) - [popup](https://developer.chrome.com/docs/extensions/reference/api/action#popup) shown when
-  clicking the extension in the toolbar
-  (`action.default_popup` in manifest.json)
-- [`side-panel`](pages/side-panel/) - [sidepanel (Chrome 114+)](https://developer.chrome.com/docs/extensions/reference/api/sidePanel)
-  (`side_panel.default_path` in manifest.json)
+## 致谢
 
-### Packages <a name="structure-packages"></a>
-
-Some shared packages:
-
-- `dev-utils` - utilities for Chrome extension development (manifest-parser, logger)
-- `env` - exports object which contain all environment variables from `.env` and dynamically declared
-- `hmr` - custom HMR plugin for Vite, injection script for reload/refresh, HMR dev-server
-- `i18n` - custom internationalization package; provides i18n function with type safety and other validation
-- `shared` - shared code for the entire project (types, constants, custom hooks, components etc.)
-- `storage` - helpers for easier integration with [storage](https://developer.chrome.com/docs/extensions/reference/api/storage), e.g. local/session storages
-- `tailwind-config` - shared Tailwind config for entire project
-- `tsconfig` - shared tsconfig for the entire project
-- `ui` - function to merge your Tailwind config with the global one; you can save components here
-- `vite-config` - shared Vite config for the entire project
-
-Other useful packages:
-
-- `zipper` - run `pnpm zip` to pack the `dist` folder into `extension-YYYYMMDD-HHmmss.zip` inside the newly created
-  `dist-zip`
-- `module-manager` - run `pnpm module-manager` to enable/disable modules
-- `e2e` - run `pnpm e2e` for end-to-end tests of your zipped extension on different browsers
-
-## Troubleshooting
-
-### Hot module reload seems to have frozen
-
-If saving source files doesn't cause the extension HMR code to trigger a reload of the browser page, try this:
-
-1. Ctrl+C the development server and restart it (`pnpm run dev`)
-2. If you get a [`grpc` error](https://github.com/Jonghakseo/chrome-extension-boilerplate-react-vite/issues/612),
-   [kill the
-   `turbo` process](https://github.com/Jonghakseo/chrome-extension-boilerplate-react-vite/issues/612#issuecomment-2518982339)
-   and run `pnpm dev` again.
-
-### Imports not resolving correctly
-
-If you are using WSL and imports are not resolving correctly, ensure that you have connected VS Code to WSL remotely using the [Remote - WSL](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-wsl) extension.
-
-## Community
-
-To chat with other community members, you can join the [Discord](https://discord.gg/4ERQ6jgV9a) server.
-You can ask questions on that server, and you can also help others.
-
-Also, suggest new features or share any challenges you've faced while developing Chrome extensions!
-
-## Debugging
-
-If you're debugging one, you can use [Brie](https://go.briehq.com/github?utm_source=CEB) lets you capture screenshots, errors, and network activity, making it easier for us to help.
-
-## Reference
-
-- [Chrome Extensions](https://developer.chrome.com/docs/extensions)
-- [Vite Plugin](https://vitejs.dev/guide/api-plugin.html)
-- [Rollup](https://rollupjs.org/guide/en/)
-- [Turborepo](https://turbo.build/repo/docs)
-- [Rollup-plugin-chrome-extension](https://www.extend-chrome.dev/rollup-plugin)
-
-## Star History <a name="star-history"></a>
-
-<a href="https://star-history.com/#Jonghakseo/chrome-extension-boilerplate-react-vite&Date">
- <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=Jonghakseo/chrome-extension-boilerplate-react-vite&type=Date&theme=dark" />
-   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=Jonghakseo/chrome-extension-boilerplate-react-vite&type=Date" />
-   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=Jonghakseo/chrome-extension-boilerplate-react-vite&type=Date" />
- </picture>
-</a>
-
-## Contributors <a name="contributors"></a>
-
-This Boilerplate is made possible thanks to all of its contributors.
-
-<a href="https://github.com/Jonghakseo/chrome-extension-boilerplate-react-vite/graphs/contributors">
-  <img width="500px" src="https://contrib.rocks/image?repo=Jonghakseo/chrome-extension-boilerplate-react-vite" alt="All Contributors"/>
-</a>
+- 基于 [Chrome Extension Boilerplate React Vite](https://github.com/Jonghakseo/chrome-extension-boilerplate-react-vite) 开发
+- 感谢所有贡献者的支持
 
 ---
 
-## Special Thanks To
-
-| <a href="https://jb.gg/OpenSourceSupport"><img width="40" src="https://resources.jetbrains.com/storage/products/company/brand/logos/jb_beam.png" alt="JetBrains Logo (Main) logo."></a> | <a href="https://www.linkedin.com/in/j-acks0n"><img width="40" style="border-radius:50%" src='https://avatars.githubusercontent.com/u/23139754' alt='Jackson Hong'/></a> |
-|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-
----
-
-Made by [Jonghakseo](https://jonghakseo.github.io/)
+如有问题或建议，欢迎提交 [Issue](https://github.com/your-username/bookmarks-manager/issues) 或 [Pull Request](https://github.com/your-username/bookmarks-manager/pulls)！
