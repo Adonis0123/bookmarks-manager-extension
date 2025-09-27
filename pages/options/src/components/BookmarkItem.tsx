@@ -23,7 +23,14 @@ export const BookmarkItem: React.FC<BookmarkItemProps> = ({
   isDuplicate = false,
   depth = 0,
 }) => {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: bookmark.id });
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: bookmark.id,
+    data: {
+      type: 'bookmark',
+      bookmark,
+      parentId: bookmark.parentId,
+    },
+  });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -72,7 +79,7 @@ export const BookmarkItem: React.FC<BookmarkItemProps> = ({
       <div className="flex min-w-0 flex-1 items-center gap-2">
         {bookmark.url && <BookmarkIcon url={bookmark.url} />}
 
-        <span className="flex-1 truncate text-sm">{bookmark.title || bookmark.url || '无标题'}</span>
+        <span className="flex-1 truncate text-start text-sm">{bookmark.title || bookmark.url || '无标题'}</span>
 
         {isDuplicate && (
           <span className="rounded bg-yellow-200 px-2 py-0.5 text-xs text-yellow-800 dark:bg-yellow-700 dark:text-yellow-200">

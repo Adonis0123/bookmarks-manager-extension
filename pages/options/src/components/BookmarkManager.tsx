@@ -1,12 +1,19 @@
-import { BookmarkFolder } from './BookmarkFolder';
-import { BookmarkItem } from './BookmarkItem';
-import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
-import { SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { BookmarkTree } from './BookmarkTree';
+import {
+  DndContext,
+  DragOverlay,
+  closestCorners,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
+import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import { cn } from '@extension/ui';
 import { Search, Trash2, RefreshCw, Copy, Download, AlertCircle } from 'lucide-react';
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useRef, startTransition } from 'react';
 import type { BookmarkNode, DuplicateBookmark, BookmarkStats } from '../types/bookmark';
-import type { DragEndEvent } from '@dnd-kit/core';
+import type { DragStartEvent, DragOverEvent, DragEndEvent } from '@dnd-kit/core';
 import type React from 'react';
 
 export const BookmarkManager: React.FC = () => {
@@ -15,6 +22,9 @@ export const BookmarkManager: React.FC = () => {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [duplicates, setDuplicates] = useState<DuplicateBookmark[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const scrollPositionRef = useRef(0);
   const [stats, setStats] = useState<BookmarkStats>({
     totalCount: 0,
     folderCount: 0,
@@ -22,7 +32,11 @@ export const BookmarkManager: React.FC = () => {
   });
 
   const sensors = useSensors(
-    useSensor(PointerSensor),
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
     }),
@@ -33,8 +47,28 @@ export const BookmarkManager: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const loadBookmarks = async () => {
-    setLoading(true);
+  const saveScrollPosition = () => {
+    if (scrollContainerRef.current) {
+      scrollPositionRef.current = scrollContainerRef.current.scrollTop;
+    }
+  };
+
+  const restoreScrollPosition = () => {
+    if (scrollContainerRef.current && scrollPositionRef.current) {
+      scrollContainerRef.current.scrollTop = scrollPositionRef.current;
+    }
+  };
+
+  const loadBookmarks = async (preserveScroll = false, skipLoading = false) => {
+    if (preserveScroll) {
+      saveScrollPosition();
+    }
+
+    // 只在首次加载时显示 loading，避免刷新抖动
+    if (!skipLoading) {
+      setLoading(true);
+    }
+
     try {
       const tree = await chrome.bookmarks.getTree();
       setBookmarks(tree[0].children || []);
@@ -43,7 +77,15 @@ export const BookmarkManager: React.FC = () => {
     } catch (error) {
       console.error('Failed to load bookmarks:', error);
     } finally {
-      setLoading(false);
+      if (!skipLoading) {
+        setLoading(false);
+      }
+      if (preserveScroll) {
+        // 使用 requestAnimationFrame 确保 DOM 更新后再恢复滚动位置
+        requestAnimationFrame(() => {
+          restoreScrollPosition();
+        });
+      }
     }
   };
 
@@ -104,6 +146,22 @@ export const BookmarkManager: React.FC = () => {
     return urls;
   }, [duplicates]);
 
+  // 递归删除书签节点
+  const removeBookmarkFromTree = (nodes: BookmarkNode[], targetId: string): BookmarkNode[] =>
+    nodes.reduce((acc: BookmarkNode[], node) => {
+      if (node.id === targetId) {
+        return acc; // 跳过要删除的节点
+      }
+      if (node.children) {
+        // 递归处理子节点
+        const updatedChildren = removeBookmarkFromTree(node.children, targetId);
+        acc.push({ ...node, children: updatedChildren });
+      } else {
+        acc.push(node);
+      }
+      return acc;
+    }, []);
+
   const handleDelete = async (id: string) => {
     // 检查是否为根文件夹（根文件夹的 parentId 通常是 "0"）
     try {
@@ -112,12 +170,24 @@ export const BookmarkManager: React.FC = () => {
         alert('无法删除根书签文件夹');
         return;
       }
-      await chrome.bookmarks.removeTree(id);
-      await loadBookmarks();
+
+      // 先在本地更新状态，避免抖动
+      setBookmarks(prev => removeBookmarkFromTree(prev, id));
       setSelectedIds(new Set());
+
+      // 然后执行实际删除
+      await chrome.bookmarks.removeTree(id);
+
+      // 静默更新数据，不显示loading
+      const tree = await chrome.bookmarks.getTree();
+      setBookmarks(tree[0].children || []);
+      calculateStats(tree[0].children || []);
+      findDuplicates(tree[0].children || []);
     } catch (error) {
       console.error('Failed to delete bookmark:', error);
       alert('删除失败：' + (error as Error).message);
+      // 如果失败，重新加载数据
+      await loadBookmarks(true, true);
     }
   };
 
@@ -153,14 +223,30 @@ export const BookmarkManager: React.FC = () => {
     }
 
     try {
+      // 先在本地批量更新状态
+      setBookmarks(prev => {
+        let updated = prev;
+        for (const id of bookmarksToDelete) {
+          updated = removeBookmarkFromTree(updated, id);
+        }
+        return updated;
+      });
+      setSelectedIds(new Set());
+
+      // 然后执行实际删除
       for (const id of bookmarksToDelete) {
         await chrome.bookmarks.removeTree(id);
       }
-      await loadBookmarks();
-      setSelectedIds(new Set());
+
+      // 静默更新数据
+      const tree = await chrome.bookmarks.getTree();
+      setBookmarks(tree[0].children || []);
+      calculateStats(tree[0].children || []);
+      findDuplicates(tree[0].children || []);
     } catch (error) {
       console.error('Failed to delete selected bookmarks:', error);
       alert('删除失败：' + (error as Error).message);
+      await loadBookmarks(true, true);
     }
   };
 
@@ -177,7 +263,7 @@ export const BookmarkManager: React.FC = () => {
           await chrome.bookmarks.remove(dup.bookmarks[i].id);
         }
       }
-      await loadBookmarks();
+      await loadBookmarks(true, true); // 保持滚动位置，跳过loading
     } catch (error) {
       console.error('Failed to remove duplicates:', error);
     }
@@ -212,19 +298,113 @@ export const BookmarkManager: React.FC = () => {
     }
   };
 
+  const handleDragStart = (event: DragStartEvent) => {
+    setActiveId(event.active.id as string);
+    // 拖拽开始时保存滚动位置
+    saveScrollPosition();
+  };
+
+  const handleDragOver = (event: DragOverEvent) => {
+    const { over } = event;
+
+    if (!over) return;
+
+    // 如果拖动到容器（文件夹或根目录）
+    if (over.data.current?.type === 'container') {
+      // 这里可以添加视觉反馈
+    }
+  };
+
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
+    setActiveId(null);
 
-    if (active.id !== over?.id) {
-      try {
-        await chrome.bookmarks.move(active.id as string, {
-          parentId: over?.id as string,
-          index: 0,
-        });
-        await loadBookmarks();
-      } catch (error) {
-        console.error('Failed to move bookmark:', error);
+    if (!over) {
+      // 恢复滚动位置即使没有放置目标
+      restoreScrollPosition();
+      return;
+    }
+
+    const activeId = active.id as string;
+    const overId = over.id as string;
+
+    // 如果没有移动位置，直接返回
+    if (activeId === overId) {
+      restoreScrollPosition();
+      return;
+    }
+
+    try {
+      let targetParentId: string;
+      let targetIndex = 0;
+
+      // 获取拖拽项的信息
+      const [activeBookmark] = await chrome.bookmarks.get(activeId);
+      const isActiveFolder = !activeBookmark.url;
+
+      // 判断目标是容器还是书签项
+      if (over.data.current?.type === 'container') {
+        // 拖拽到容器（空白区域）
+        targetParentId = over.data.current.parentId;
+        // 获取容器内的子项数量，放在最后
+        const children = await chrome.bookmarks.getChildren(targetParentId);
+        targetIndex = children.length;
+      } else {
+        // 拖拽到具体的书签或文件夹
+        const [targetItem] = await chrome.bookmarks.get(overId);
+        const isTargetFolder = !targetItem.url;
+
+        // 判断是否拖拽到文件夹内部（当拖拽到文件夹上方且是书签时）
+        if (isTargetFolder && !isActiveFolder && over.data.current?.type === 'folder') {
+          // 书签拖入文件夹内部
+          targetParentId = overId;
+          targetIndex = 0;
+        } else {
+          // 拖拽到项目旁边（同级排序）
+          targetParentId = targetItem.parentId!;
+
+          // 获取目标父文件夹中的所有子项
+          const siblings = await chrome.bookmarks.getChildren(targetParentId);
+          const activeIndex = siblings.findIndex(child => child.id === activeId);
+          const overIndex = siblings.findIndex(child => child.id === overId);
+
+          // 计算目标位置
+          if (activeIndex !== -1 && overIndex !== -1) {
+            // 同一父文件夹内移动
+            if (activeIndex < overIndex) {
+              targetIndex = overIndex; // 向下移动
+            } else {
+              targetIndex = overIndex; // 向上移动
+            }
+          } else {
+            // 不同文件夹间移动
+            targetIndex = overIndex >= 0 ? overIndex + 1 : 0;
+          }
+        }
       }
+
+      // 移动书签或文件夹
+      await chrome.bookmarks.move(activeId, {
+        parentId: targetParentId,
+        index: targetIndex,
+      });
+
+      // 静默更新数据，不触发重新渲染
+      const tree = await chrome.bookmarks.getTree();
+
+      // 使用 React 18 的 startTransition 来避免阻塞UI
+      startTransition(() => {
+        setBookmarks(tree[0].children || []);
+        calculateStats(tree[0].children || []);
+        findDuplicates(tree[0].children || []);
+      });
+
+      // 立即恢复滚动位置
+      restoreScrollPosition();
+    } catch (error) {
+      console.error('Failed to move bookmark:', error);
+      alert('移动失败：' + (error as Error).message);
+      restoreScrollPosition();
     }
   };
 
@@ -268,33 +448,6 @@ export const BookmarkManager: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [bookmarks, searchQuery],
   );
-
-  const renderBookmarks = (nodes: BookmarkNode[]) =>
-    nodes.map(node => {
-      if (node.children) {
-        return (
-          <BookmarkFolder
-            key={node.id}
-            folder={node}
-            onDelete={handleDelete}
-            selectedIds={selectedIds}
-            onSelect={handleSelect}
-            duplicateUrls={duplicateUrls}
-          />
-        );
-      }
-
-      return (
-        <BookmarkItem
-          key={node.id}
-          bookmark={node}
-          onDelete={handleDelete}
-          isSelected={selectedIds.has(node.id)}
-          onSelect={handleSelect}
-          isDuplicate={node.url ? duplicateUrls.has(node.url) : false}
-        />
-      );
-    });
 
   if (loading) {
     return (
@@ -381,7 +534,7 @@ export const BookmarkManager: React.FC = () => {
             </button>
 
             <button
-              onClick={loadBookmarks}
+              onClick={() => loadBookmarks()}
               className="rounded-lg bg-gray-200 px-4 py-2 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600">
               <RefreshCw className="h-4 w-4" />
             </button>
@@ -398,11 +551,32 @@ export const BookmarkManager: React.FC = () => {
         </div>
       )}
 
-      <div className="max-h-[600px] overflow-y-auto rounded-lg border p-4 dark:border-gray-700">
-        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-          <SortableContext items={filteredBookmarks.map(b => b.id)} strategy={verticalListSortingStrategy}>
-            <div className="space-y-1">{renderBookmarks(filteredBookmarks)}</div>
-          </SortableContext>
+      <div
+        ref={scrollContainerRef}
+        className="max-h-[600px] overflow-y-auto rounded-lg border p-4 dark:border-gray-700"
+        onScroll={() => saveScrollPosition()}>
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCorners}
+          onDragStart={handleDragStart}
+          onDragOver={handleDragOver}
+          onDragEnd={handleDragEnd}>
+          <BookmarkTree
+            items={filteredBookmarks}
+            parentId="0"
+            onDelete={handleDelete}
+            selectedIds={selectedIds}
+            onSelect={handleSelect}
+            duplicateUrls={duplicateUrls}
+            depth={0}
+          />
+          <DragOverlay>
+            {activeId ? (
+              <div className="rounded bg-blue-100 p-2 shadow-lg dark:bg-blue-900">
+                <span className="text-sm">移动中...</span>
+              </div>
+            ) : null}
+          </DragOverlay>
         </DndContext>
 
         {filteredBookmarks.length === 0 && (

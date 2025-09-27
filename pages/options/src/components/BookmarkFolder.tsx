@@ -1,6 +1,8 @@
-import { BookmarkItem } from './BookmarkItem';
+import { BookmarkTree } from './BookmarkTree';
+import { useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { cn } from '@extension/ui';
-import { ChevronRight, ChevronDown, Folder, FolderOpen, Trash2, Lock } from 'lucide-react';
+import { ChevronRight, ChevronDown, Folder, FolderOpen, Trash2, Lock, GripVertical } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import type { BookmarkNode } from '../types/bookmark';
 import type React from 'react';
@@ -24,6 +26,22 @@ export const BookmarkFolder: React.FC<BookmarkFolderProps> = ({
 }) => {
   const [isExpanded, setIsExpanded] = useState(depth < 2);
   const [isRootFolder, setIsRootFolder] = useState(false);
+
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: folder.id,
+    disabled: isRootFolder, // 根文件夹不能被拖动
+    data: {
+      type: 'folder',
+      folder,
+      parentId: folder.parentId,
+    },
+  });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    paddingLeft: `${depth * 20 + 12}px`,
+  };
 
   // 检查是否为根文件夹
   useEffect(() => {
@@ -65,40 +83,8 @@ export const BookmarkFolder: React.FC<BookmarkFolderProps> = ({
     onSelect(folder.id);
   };
 
-  const renderChildren = () => {
-    if (!folder.children || folder.children.length === 0) return null;
-
-    return folder.children.map(child => {
-      if (child.children) {
-        return (
-          <BookmarkFolder
-            key={child.id}
-            folder={child}
-            onDelete={onDelete}
-            selectedIds={selectedIds}
-            onSelect={onSelect}
-            duplicateUrls={duplicateUrls}
-            depth={depth + 1}
-          />
-        );
-      }
-
-      return (
-        <BookmarkItem
-          key={child.id}
-          bookmark={child}
-          onDelete={onDelete}
-          isSelected={selectedIds.has(child.id)}
-          onSelect={onSelect}
-          isDuplicate={child.url ? duplicateUrls.has(child.url) : false}
-          depth={depth + 1}
-        />
-      );
-    });
-  };
-
   return (
-    <div className="w-full">
+    <div ref={setNodeRef} style={style} className={cn('w-full', isDragging && 'opacity-50')}>
       <div
         role="button"
         tabIndex={0}
@@ -106,7 +92,6 @@ export const BookmarkFolder: React.FC<BookmarkFolderProps> = ({
           'flex cursor-pointer items-center gap-2 rounded-md p-2 transition-colors hover:bg-gray-100 dark:hover:bg-gray-700',
           selectedIds.has(folder.id) && 'bg-blue-50 dark:bg-blue-900/20',
         )}
-        style={{ paddingLeft: `${depth * 20 + 12}px` }}
         onClick={handleToggle}
         onKeyDown={e => {
           if (e.key === 'Enter' || e.key === ' ') {
@@ -114,6 +99,12 @@ export const BookmarkFolder: React.FC<BookmarkFolderProps> = ({
             handleToggle();
           }
         }}>
+        {!isRootFolder && (
+          <div {...attributes} {...listeners} className="cursor-move">
+            <GripVertical className="h-4 w-4 text-gray-400" />
+          </div>
+        )}
+
         <button className="p-0">
           {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
         </button>
@@ -162,7 +153,17 @@ export const BookmarkFolder: React.FC<BookmarkFolderProps> = ({
         )}
       </div>
 
-      {isExpanded && <div className="ml-2">{renderChildren()}</div>}
+      {isExpanded && folder.children && folder.children.length > 0 && (
+        <BookmarkTree
+          items={folder.children}
+          parentId={folder.id}
+          onDelete={onDelete}
+          selectedIds={selectedIds}
+          onSelect={onSelect}
+          duplicateUrls={duplicateUrls}
+          depth={depth + 1}
+        />
+      )}
     </div>
   );
 };
