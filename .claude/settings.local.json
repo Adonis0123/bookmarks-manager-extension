@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": ["Bash(pnpm module-manager:*)", "Bash(pnpm type-check:*)", "Bash(pnpm add:*)", "Bash(pnpm dev:*)"],
+    "deny": [],
+    "ask": []
+  }
+}
