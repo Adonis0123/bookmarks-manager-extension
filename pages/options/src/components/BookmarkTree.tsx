@@ -13,6 +13,8 @@ interface BookmarkTreeProps {
   selectedIds: Set<string>;
   onSelect: (id: string) => void;
   duplicateUrls: Set<string>;
+  expandedFolders?: Set<string>;
+  onToggleFolder?: (folderId: string) => void;
   depth?: number;
 }
 
@@ -23,6 +25,8 @@ export const BookmarkTree: React.FC<BookmarkTreeProps> = ({
   selectedIds,
   onSelect,
   duplicateUrls,
+  expandedFolders,
+  onToggleFolder,
   depth = 0,
 }) => {
   const { setNodeRef, isOver } = useDroppable({
@@ -55,6 +59,8 @@ export const BookmarkTree: React.FC<BookmarkTreeProps> = ({
                 selectedIds={selectedIds}
                 onSelect={onSelect}
                 duplicateUrls={duplicateUrls}
+                expandedFolders={expandedFolders}
+                onToggleFolder={onToggleFolder}
                 depth={depth}
               />
             );

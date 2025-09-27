@@ -1,3 +1,4 @@
+import { BatchOperationBar } from './BatchOperationBar';
 import { BookmarkTree } from './BookmarkTree';
 import {
   DndContext,
@@ -9,8 +10,7 @@ import {
   useSensors,
 } from '@dnd-kit/core';
 import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
-import { cn } from '@extension/ui';
-import { Search, Trash2, RefreshCw, Copy, Download, AlertCircle } from 'lucide-react';
+import { Search, RefreshCw, Download, AlertCircle } from 'lucide-react';
 import { useEffect, useState, useMemo, useRef, startTransition } from 'react';
 import type { BookmarkNode, DuplicateBookmark, BookmarkStats } from '../types/bookmark';
 import type { DragStartEvent, DragOverEvent, DragEndEvent } from '@dnd-kit/core';
@@ -25,6 +25,7 @@ export const BookmarkManager: React.FC = () => {
   const [activeId, setActiveId] = useState<string | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const scrollPositionRef = useRef(0);
+  const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
   const [stats, setStats] = useState<BookmarkStats>({
     totalCount: 0,
     folderCount: 0,
@@ -43,7 +44,7 @@ export const BookmarkManager: React.FC = () => {
   );
 
   useEffect(() => {
-    loadBookmarks();
+    loadBookmarks(false, false, true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -59,7 +60,7 @@ export const BookmarkManager: React.FC = () => {
     }
   };
 
-  const loadBookmarks = async (preserveScroll = false, skipLoading = false) => {
+  const loadBookmarks = async (preserveScroll = false, skipLoading = false, initExpanded = false) => {
     if (preserveScroll) {
       saveScrollPosition();
     }
@@ -71,9 +72,26 @@ export const BookmarkManager: React.FC = () => {
 
     try {
       const tree = await chrome.bookmarks.getTree();
-      setBookmarks(tree[0].children || []);
-      calculateStats(tree[0].children || []);
-      findDuplicates(tree[0].children || []);
+      const rootChildren = tree[0].children || [];
+      setBookmarks(rootChildren);
+      calculateStats(rootChildren);
+      findDuplicates(rootChildren);
+
+      // 初始化时，展开前两级文件夹
+      if (initExpanded) {
+        const initialExpanded = new Set<string>();
+        const collectTopFolders = (nodes: BookmarkNode[], currentDepth: number) => {
+          if (currentDepth >= 2) return;
+          nodes.forEach(node => {
+            if (node.children) {
+              initialExpanded.add(node.id);
+              collectTopFolders(node.children, currentDepth + 1);
+            }
+          });
+        };
+        collectTopFolders(rootChildren, 0);
+        setExpandedFolders(initialExpanded);
+      }
     } catch (error) {
       console.error('Failed to load bookmarks:', error);
     } finally {
@@ -298,6 +316,68 @@ export const BookmarkManager: React.FC = () => {
     }
   };
 
+  const handleExpandAll = () => {
+    if (selectedIds.size > 0) {
+      // 如果有选中项，只展开选中的文件夹
+      const newExpanded = new Set(expandedFolders);
+      selectedIds.forEach(id => {
+        // 查找并检查是否是文件夹
+        const findNode = (nodes: BookmarkNode[]): BookmarkNode | null => {
+          for (const node of nodes) {
+            if (node.id === id && node.children) return node;
+            if (node.children) {
+              const found = findNode(node.children);
+              if (found) return found;
+            }
+          }
+          return null;
+        };
+        const node = findNode(bookmarks);
+        if (node) {
+          newExpanded.add(id);
+        }
+      });
+      setExpandedFolders(newExpanded);
+    } else {
+      // 没有选中项，展开所有文件夹
+      const allFolderIds = new Set<string>();
+      const collectFolderIds = (nodes: BookmarkNode[]) => {
+        nodes.forEach(node => {
+          if (node.children) {
+            allFolderIds.add(node.id);
+            collectFolderIds(node.children);
+          }
+        });
+      };
+      collectFolderIds(bookmarks);
+      setExpandedFolders(allFolderIds);
+    }
+  };
+
+  const handleCollapseAll = () => {
+    if (selectedIds.size > 0) {
+      // 如果有选中项，只折叠选中的文件夹
+      const newExpanded = new Set(expandedFolders);
+      selectedIds.forEach(id => {
+        newExpanded.delete(id);
+      });
+      setExpandedFolders(newExpanded);
+    } else {
+      // 没有选中项，折叠所有文件夹
+      setExpandedFolders(new Set());
+    }
+  };
+
+  const handleToggleFolder = (folderId: string) => {
+    const newExpanded = new Set(expandedFolders);
+    if (newExpanded.has(folderId)) {
+      newExpanded.delete(folderId);
+    } else {
+      newExpanded.add(folderId);
+    }
+    setExpandedFolders(newExpanded);
+  };
+
   const handleDragStart = (event: DragStartEvent) => {
     setActiveId(event.active.id as string);
     // 拖拽开始时保存滚动位置
@@ -481,6 +561,19 @@ export const BookmarkManager: React.FC = () => {
           </div>
         </div>
 
+        <BatchOperationBar
+          selectedCount={selectedIds.size}
+          totalCount={stats.totalCount}
+          duplicateCount={stats.duplicateCount}
+          onSelectAll={handleSelectAll}
+          onDeleteSelected={handleDeleteSelected}
+          onRemoveDuplicates={handleRemoveDuplicates}
+          onExpandAll={handleExpandAll}
+          onCollapseAll={handleCollapseAll}
+          hasSelection={selectedIds.size > 0}
+          hasDuplicates={duplicates.length > 0}
+        />
+
         <div className="flex flex-col gap-4 md:flex-row">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 transform text-gray-400" />
@@ -494,38 +587,6 @@ export const BookmarkManager: React.FC = () => {
           </div>
 
           <div className="flex gap-2">
-            <button
-              onClick={handleSelectAll}
-              className="rounded-lg bg-gray-200 px-4 py-2 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600">
-              {selectedIds.size > 0 ? '取消全选' : '全选'}
-            </button>
-
-            <button
-              onClick={handleDeleteSelected}
-              disabled={selectedIds.size === 0}
-              className={cn(
-                'flex items-center gap-2 rounded-lg px-4 py-2',
-                selectedIds.size > 0
-                  ? 'bg-red-600 text-white hover:bg-red-700'
-                  : 'cursor-not-allowed bg-gray-200 text-gray-400 dark:bg-gray-700',
-              )}>
-              <Trash2 className="h-4 w-4" />
-              删除选中
-            </button>
-
-            <button
-              onClick={handleRemoveDuplicates}
-              disabled={duplicates.length === 0}
-              className={cn(
-                'flex items-center gap-2 rounded-lg px-4 py-2',
-                duplicates.length > 0
-                  ? 'bg-yellow-600 text-white hover:bg-yellow-700'
-                  : 'cursor-not-allowed bg-gray-200 text-gray-400 dark:bg-gray-700',
-              )}>
-              <Copy className="h-4 w-4" />
-              去重
-            </button>
-
             <button
               onClick={handleExport}
               className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700">
@@ -568,6 +629,8 @@ export const BookmarkManager: React.FC = () => {
             selectedIds={selectedIds}
             onSelect={handleSelect}
             duplicateUrls={duplicateUrls}
+            expandedFolders={expandedFolders}
+            onToggleFolder={handleToggleFolder}
             depth={0}
           />
           <DragOverlay>

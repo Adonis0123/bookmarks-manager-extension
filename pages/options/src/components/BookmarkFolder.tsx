@@ -13,6 +13,8 @@ interface BookmarkFolderProps {
   selectedIds: Set<string>;
   onSelect: (id: string) => void;
   duplicateUrls: Set<string>;
+  expandedFolders?: Set<string>;
+  onToggleFolder?: (folderId: string) => void;
   depth?: number;
 }
 
@@ -22,9 +24,12 @@ export const BookmarkFolder: React.FC<BookmarkFolderProps> = ({
   selectedIds,
   onSelect,
   duplicateUrls,
+  expandedFolders,
+  onToggleFolder,
   depth = 0,
 }) => {
-  const [isExpanded, setIsExpanded] = useState(depth < 2);
+  const [localExpanded, setLocalExpanded] = useState(depth < 2);
+  const isExpanded = expandedFolders ? expandedFolders.has(folder.id) : localExpanded;
   const [isRootFolder, setIsRootFolder] = useState(false);
 
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
@@ -56,7 +61,11 @@ export const BookmarkFolder: React.FC<BookmarkFolderProps> = ({
   }, [folder.id]);
 
   const handleToggle = () => {
-    setIsExpanded(!isExpanded);
+    if (onToggleFolder) {
+      onToggleFolder(folder.id);
+    } else {
+      setLocalExpanded(!localExpanded);
+    }
   };
 
   const handleDelete = async (e: React.MouseEvent) => {
@@ -161,6 +170,8 @@ export const BookmarkFolder: React.FC<BookmarkFolderProps> = ({
           selectedIds={selectedIds}
           onSelect={onSelect}
           duplicateUrls={duplicateUrls}
+          expandedFolders={expandedFolders}
+          onToggleFolder={onToggleFolder}
           depth={depth + 1}
         />
       )}
