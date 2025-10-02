@@ -50,16 +50,8 @@ const manifest = {
       js: ['content/all.iife.js'],
     },
     {
-      matches: ['https://adonis20210809@gmail.com/*'],
-      js: ['content/example.iife.js'],
-    },
-    {
       matches: ['http://*/*', 'https://*/*', '<all_urls>'],
       js: ['content-ui/all.iife.js'],
-    },
-    {
-      matches: ['https://adonis20210809@gmail.com/*'],
-      js: ['content-ui/example.iife.js'],
     },
     {
       matches: ['http://*/*', 'https://*/*', '<all_urls>'],
