@@ -46,13 +46,6 @@ export const useBookmarkOperations = ({
 
         // 确认删除
         const isFolder = !bookmark.url;
-        const message = isFolder
-          ? `确定要删除文件夹 "${bookmark.title}" 及其所有内容吗？`
-          : `确定要删除书签 "${bookmark.title}" 吗？`;
-
-        if (!confirm(message)) {
-          return;
-        }
 
         // 获取完整的节点信息（包括子节点）用于历史记录
         let fullNode: BookmarkNode = bookmark as BookmarkNode;
