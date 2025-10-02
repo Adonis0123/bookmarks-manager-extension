@@ -37,6 +37,15 @@ const manifest = {
     default_popup: 'popup/index.html',
     default_icon: 'icon-34.png',
   },
+  commands: {
+    _execute_action: {
+      suggested_key: {
+        default: 'Ctrl+Shift+B',
+        mac: 'Command+Shift+B',
+      },
+      description: 'Open bookmarks manager popup',
+    },
+  },
   icons: {
     '128': 'icon-128.png',
   },
