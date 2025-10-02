@@ -24,7 +24,7 @@ const manifest = {
   name: '__MSG_extensionName__',
   browser_specific_settings: {
     gecko: {
-      id: 'example@example.com',
+      id: 'adonis20210809@gmail.com',
       strict_min_version: '109.0',
     },
   },
@@ -50,7 +50,7 @@ const manifest = {
       js: ['content/all.iife.js'],
     },
     {
-      matches: ['https://example.com/*'],
+      matches: ['https://adonis20210809@gmail.com/*'],
       js: ['content/example.iife.js'],
     },
     {
@@ -58,7 +58,7 @@ const manifest = {
       js: ['content-ui/all.iife.js'],
     },
     {
-      matches: ['https://example.com/*'],
+      matches: ['https://adonis20210809@gmail.com/*'],
       js: ['content-ui/example.iife.js'],
     },
     {

@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a Chrome/Firefox extension boilerplate based on React, TypeScript, Vite, and Turborepo. It provides a modern development environment for building browser extensions with hot module reload and modular architecture.
+This is a powerful bookmarks management browser extension built with React, TypeScript, Vite, and Turborepo. It helps users efficiently manage, search, and organize their browser bookmarks with an intuitive interface and modern development architecture.
 
 ## Development Commands
 

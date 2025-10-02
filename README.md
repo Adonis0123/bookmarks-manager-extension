@@ -12,9 +12,6 @@
 
 </div>
 
-> [!NOTE]
-> 基于 [Chrome Extension Boilerplate React Vite](https://github.com/Jonghakseo/chrome-extension-boilerplate-react-vite) 开发
-
 ## 目录
 
 - [简介](#intro)
@@ -172,8 +169,7 @@ MIT License - 详见 [LICENSE](LICENSE) 文件
 
 ## 致谢
 
-- 基于 [Chrome Extension Boilerplate React Vite](https://github.com/Jonghakseo/chrome-extension-boilerplate-react-vite) 开发
-- 感谢所有贡献者的支持
+感谢所有贡献者的支持
 
 ---
 
