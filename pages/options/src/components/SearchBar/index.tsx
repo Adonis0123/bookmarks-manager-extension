@@ -1,4 +1,4 @@
-import { Search, RefreshCw, Download, Undo } from 'lucide-react';
+import { Search, RefreshCw, Download, Undo, FolderPlus } from 'lucide-react';
 import type React from 'react';
 
 interface SearchBarProps {
@@ -6,6 +6,7 @@ interface SearchBarProps {
   onSearchChange: (query: string) => void;
   onRefresh: () => void;
   onExport: () => void;
+  onCreateRootFolder?: () => void;
   onUndo?: () => void;
   canUndo?: boolean;
 }
@@ -15,6 +16,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
   onSearchChange,
   onRefresh,
   onExport,
+  onCreateRootFolder,
   onUndo,
   canUndo = false,
 }) => (
@@ -31,6 +33,15 @@ export const SearchBar: React.FC<SearchBarProps> = ({
     </div>
 
     <div className="flex gap-2">
+      {onCreateRootFolder && (
+        <button
+          onClick={onCreateRootFolder}
+          className="flex items-center gap-2 rounded-lg bg-green-600 px-4 py-2 text-white hover:bg-green-700">
+          <FolderPlus className="h-4 w-4" />
+          新建文件夹
+        </button>
+      )}
+
       {onUndo && (
         <button
           onClick={onUndo}

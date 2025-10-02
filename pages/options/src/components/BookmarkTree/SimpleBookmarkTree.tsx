@@ -1,6 +1,7 @@
 import { BookmarkDisplay } from './BookmarkDisplay';
 import { ConfirmDialog } from './ConfirmDialog';
 import { ContextMenu, createBookmarkMenuItems, createFolderMenuItems } from './ContextMenu';
+import { CreateFolderDialog } from './CreateFolderDialog';
 import { FolderDisplay } from './FolderDisplay';
 import { TreeItemActions } from './TreeItemActions';
 import { cn } from '@extension/ui';
@@ -20,6 +21,7 @@ interface BookmarkTreeProps {
   onDelete: (id: string) => void;
   onMove: (itemId: string, targetParentId: string, targetIndex: number) => Promise<void>;
   onUpdate?: (id: string, newTitle: string) => Promise<void>;
+  onCreateFolder?: (parentId: string, title: string) => Promise<void>;
 }
 
 interface TreeItemProps {
@@ -32,6 +34,7 @@ interface TreeItemProps {
   duplicateUrls: Set<string>;
   onDelete: (id: string) => void;
   onUpdate?: (id: string, newTitle: string) => Promise<void>;
+  onCreateFolder?: (parentId: string, title: string) => Promise<void>;
   onDragStart: (node: BookmarkNode) => void;
   onDragOver: () => void;
   onDrop: (node: BookmarkNode) => void;
@@ -47,6 +50,7 @@ const TreeItem: React.FC<TreeItemProps> = ({
   duplicateUrls,
   onDelete,
   onUpdate,
+  onCreateFolder,
   onDragStart,
   onDragOver,
   onDrop,
@@ -60,6 +64,7 @@ const TreeItem: React.FC<TreeItemProps> = ({
   const [isHovered, setIsHovered] = useState(false);
   const [contextMenu, setContextMenu] = useState<ContextMenuPosition | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showCreateFolderDialog, setShowCreateFolderDialog] = useState(false);
 
   const handleToggle = () => {
     if (isFolder) {
@@ -103,6 +108,22 @@ const TreeItem: React.FC<TreeItemProps> = ({
     if (node.url) {
       navigator.clipboard.writeText(node.url);
     }
+  };
+
+  const handleCreateSubfolder = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setShowCreateFolderDialog(true);
+  };
+
+  const handleConfirmCreateFolder = async (folderName: string) => {
+    if (onCreateFolder) {
+      await onCreateFolder(node.id, folderName);
+    }
+    setShowCreateFolderDialog(false);
+  };
+
+  const handleCancelCreateFolder = () => {
+    setShowCreateFolderDialog(false);
   };
 
   const handleContextMenu = (e: React.MouseEvent) => {
@@ -253,9 +274,11 @@ const TreeItem: React.FC<TreeItemProps> = ({
         {/* 操作按钮 */}
         <TreeItemActions
           hasUrl={!!node.url}
+          isFolder={isFolder}
           isHovered={isHovered}
           onOpen={node.url ? handleOpen : undefined}
           onEdit={onUpdate ? handleEdit : undefined}
+          onCreateSubfolder={isFolder && onCreateFolder ? handleCreateSubfolder : undefined}
           onDelete={handleDeleteClick}
         />
       </div>
@@ -267,6 +290,11 @@ const TreeItem: React.FC<TreeItemProps> = ({
           items={
             isFolder
               ? createFolderMenuItems({
+                  onCreateSubfolder: onCreateFolder
+                    ? () => {
+                        setShowCreateFolderDialog(true);
+                      }
+                    : undefined,
                   onEdit: onUpdate
                     ? () => {
                         setIsEditing(true);
@@ -313,6 +341,15 @@ const TreeItem: React.FC<TreeItemProps> = ({
         />
       )}
 
+      {/* 创建文件夹对话框 */}
+      {showCreateFolderDialog && (
+        <CreateFolderDialog
+          onConfirm={handleConfirmCreateFolder}
+          onCancel={handleCancelCreateFolder}
+          defaultValue="新建文件夹"
+        />
+      )}
+
       {/* 子节点 */}
       {isFolder && isExpanded && node.children && (
         <div>
@@ -328,6 +365,7 @@ const TreeItem: React.FC<TreeItemProps> = ({
               duplicateUrls={duplicateUrls}
               onDelete={onDelete}
               onUpdate={onUpdate}
+              onCreateFolder={onCreateFolder}
               onDragStart={onDragStart}
               onDragOver={onDragOver}
               onDrop={onDrop}
@@ -349,6 +387,7 @@ export const SimpleBookmarkTree: React.FC<BookmarkTreeProps> = ({
   onDelete,
   onMove,
   onUpdate,
+  onCreateFolder,
 }) => {
   const [draggedNode, setDraggedNode] = useState<BookmarkNode | null>(null);
 
@@ -397,6 +436,7 @@ export const SimpleBookmarkTree: React.FC<BookmarkTreeProps> = ({
           duplicateUrls={duplicateUrls}
           onDelete={onDelete}
           onUpdate={onUpdate}
+          onCreateFolder={onCreateFolder}
           onDragStart={handleDragStart}
           onDragOver={handleDragOver}
           onDrop={handleDrop}

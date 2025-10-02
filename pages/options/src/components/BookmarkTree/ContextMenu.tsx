@@ -1,5 +1,5 @@
 import { cn } from '@extension/ui';
-import { ExternalLink, Edit, Trash2, Copy, FolderOpen } from 'lucide-react';
+import { ExternalLink, Edit, Trash2, Copy, FolderOpen, FolderPlus } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 import type React from 'react';
 
@@ -150,11 +150,20 @@ export const createBookmarkMenuItems = (
 };
 
 export const createFolderMenuItems = (handlers: {
+  onCreateSubfolder?: () => void;
   onEdit?: () => void;
   onDelete?: () => void;
   onExpandAll?: () => void;
 }): ContextMenuItem[] => {
   const items: ContextMenuItem[] = [];
+
+  if (handlers.onCreateSubfolder) {
+    items.push({
+      label: '新建子文件夹',
+      icon: <FolderPlus className="h-4 w-4" />,
+      onClick: handlers.onCreateSubfolder,
+    });
+  }
 
   if (handlers.onExpandAll) {
     items.push({

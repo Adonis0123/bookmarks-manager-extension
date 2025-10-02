@@ -16,6 +16,7 @@ interface UseBookmarkOperationsReturn {
   deleteSelectedBookmarks: (selectedIds: Set<string>) => Promise<void>;
   moveBookmark: (bookmarkId: string, newParentId: string, newIndex: number) => Promise<void>;
   updateBookmark: (id: string, newTitle: string) => Promise<void>;
+  createFolder: (parentId: string, title: string) => Promise<void>;
   exportBookmarks: () => void;
 }
 
@@ -204,6 +205,32 @@ export const useBookmarkOperations = ({
   );
 
   /**
+   * 创建新文件夹
+   */
+  const createFolder = useCallback(
+    async (parentId: string, title: string) => {
+      try {
+        // 创建文件夹
+        await chrome.bookmarks.create({
+          parentId: parentId,
+          title: title,
+        });
+
+        // 使用 startTransition 避免阻塞 UI
+        const tree = await chrome.bookmarks.getTree();
+        startTransition(() => {
+          setBookmarks(tree[0].children || []);
+        });
+      } catch (error) {
+        console.error('Failed to create folder:', error);
+        alert('创建文件夹失败：' + (error as Error).message);
+        await loadBookmarks(true, true);
+      }
+    },
+    [setBookmarks, loadBookmarks],
+  );
+
+  /**
    * 导出书签为 JSON
    */
   const exportBookmarks = useCallback(() => {
@@ -222,6 +249,7 @@ export const useBookmarkOperations = ({
     deleteSelectedBookmarks,
     moveBookmark,
     updateBookmark,
+    createFolder,
     exportBookmarks,
   };
 };

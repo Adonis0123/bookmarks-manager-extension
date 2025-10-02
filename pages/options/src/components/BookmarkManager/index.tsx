@@ -3,9 +3,10 @@ import { useBookmarkOperations } from '../../hooks/useBookmarkOperations';
 import { useBookmarks } from '../../hooks/useBookmarks';
 import { useBookmarkStats } from '../../hooks/useBookmarkStats';
 import { useDuplicates } from '../../hooks/useDuplicates';
-import { filterBookmarks } from '../../utils/bookmarkFilters';
+import { filterBookmarks, findNodeById } from '../../utils/bookmarkFilters';
 import { BatchOperationBar } from '../BatchOperationBar';
 import { BookmarkTree } from '../BookmarkTree';
+import { CreateFolderDialog } from '../BookmarkTree/CreateFolderDialog';
 import { DuplicatePreviewDialog } from '../DuplicatePreview';
 import { SearchBar } from '../SearchBar';
 import { StatsCards } from '../StatsCards';
@@ -21,6 +22,9 @@ export const BookmarkManager: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showDuplicateDialog, setShowDuplicateDialog] = useState(false);
+  const [showCreateRootFolderDialog, setShowCreateRootFolderDialog] = useState(false);
+  const [targetParentId, setTargetParentId] = useState<string>('1'); // 默认书签栏
+  const [targetParentName, setTargetParentName] = useState<string>('书签栏');
 
   // Hooks
   const {
@@ -37,7 +41,7 @@ export const BookmarkManager: React.FC = () => {
 
   const { canUndo, recordDelete, recordMove, recordUpdate, undo } = useBookmarkHistory();
 
-  const { deleteBookmark, deleteSelectedBookmarks, moveBookmark, updateBookmark, exportBookmarks } =
+  const { deleteBookmark, deleteSelectedBookmarks, moveBookmark, updateBookmark, createFolder, exportBookmarks } =
     useBookmarkOperations({
       bookmarks,
       setBookmarks,
@@ -122,6 +126,40 @@ export const BookmarkManager: React.FC = () => {
     await loadBookmarks(true, true);
   };
 
+  const handleCreateRootFolder = () => {
+    // 智能选择父文件夹：如果选中了文件夹，在选中的文件夹下创建，否则在书签栏下创建
+    let parentId = '1'; // 默认：书签栏
+    let parentName = '书签栏';
+
+    if (selectedIds.size > 0) {
+      // 遍历选中项，找到第一个文件夹
+      for (const selectedId of selectedIds) {
+        const node = findNodeById(bookmarks, selectedId);
+        if (node && node.children) {
+          // 找到文件夹
+          parentId = node.id;
+          parentName = node.title || '未命名文件夹';
+          break;
+        }
+      }
+    }
+
+    setTargetParentId(parentId);
+    setTargetParentName(parentName);
+    setShowCreateRootFolderDialog(true);
+  };
+
+  const handleConfirmCreateRootFolder = async (folderName: string) => {
+    // 使用智能选择的父文件夹 ID
+    await createFolder(targetParentId, folderName);
+    setShowCreateRootFolderDialog(false);
+    await loadBookmarks(true, true);
+  };
+
+  const handleCancelCreateRootFolder = () => {
+    setShowCreateRootFolderDialog(false);
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center p-8">
@@ -155,6 +193,7 @@ export const BookmarkManager: React.FC = () => {
           onSearchChange={setSearchQuery}
           onRefresh={() => loadBookmarks()}
           onExport={exportBookmarks}
+          onCreateRootFolder={handleCreateRootFolder}
           onUndo={handleUndo}
           canUndo={canUndo}
         />
@@ -185,6 +224,7 @@ export const BookmarkManager: React.FC = () => {
             onDelete={deleteBookmark}
             onMove={moveBookmark}
             onUpdate={updateBookmark}
+            onCreateFolder={createFolder}
           />
         ) : (
           <div className="py-8 text-center text-gray-500 dark:text-gray-400">
@@ -199,6 +239,16 @@ export const BookmarkManager: React.FC = () => {
           duplicates={duplicates}
           onConfirm={handleConfirmRemoveDuplicates}
           onCancel={handleCancelRemoveDuplicates}
+        />
+      )}
+
+      {/* 创建根文件夹对话框 */}
+      {showCreateRootFolderDialog && (
+        <CreateFolderDialog
+          onConfirm={handleConfirmCreateRootFolder}
+          onCancel={handleCancelCreateRootFolder}
+          defaultValue="新建文件夹"
+          parentFolderName={targetParentName}
         />
       )}
     </div>
