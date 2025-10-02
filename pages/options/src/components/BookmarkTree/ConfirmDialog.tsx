@@ -14,6 +14,7 @@ interface ConfirmDialogProps {
   variant?: 'danger' | 'warning' | 'info';
   onConfirm: () => void;
   onCancel: () => void;
+  children?: React.ReactNode;
 }
 
 export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
@@ -27,6 +28,7 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
   variant = 'danger',
   onConfirm,
   onCancel,
+  children,
 }) => {
   useEffect(() => {
     const handleEscape = (event: KeyboardEvent) => {
@@ -69,41 +71,43 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
         <div className="space-y-4 p-5">
           <p className="text-gray-700 dark:text-gray-300">{message}</p>
 
-          {/* 书签/文件夹信息卡片 */}
-          {itemTitle && (
-            <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-900/50">
-              <div className="flex items-start gap-3">
-                <div
-                  className={cn(
-                    'mt-0.5 flex-shrink-0 rounded-md p-2',
-                    isFolder
-                      ? 'bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400'
-                      : 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400',
-                  )}>
-                  {isFolder ? <Folder className="h-5 w-5" /> : <Bookmark className="h-5 w-5" />}
-                </div>
-                <div className="min-w-0 flex-1 space-y-2 text-left">
-                  <div>
-                    <p className="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
-                      {isFolder ? '文件夹名称' : '书签标题'}
-                    </p>
-                    <p className="mt-1 font-medium text-gray-900 dark:text-gray-100">{itemTitle}</p>
-                  </div>
-                  {itemUrl && !isFolder && (
-                    <div>
-                      <p className="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
-                        链接地址
-                      </p>
-                      <div className="mt-1 flex items-start gap-2">
-                        <LinkIcon className="mt-0.5 h-4 w-4 flex-shrink-0 text-gray-400" />
-                        <p className="break-all text-sm text-gray-600 dark:text-gray-400">{itemUrl}</p>
-                      </div>
+          {/* 自定义内容或默认书签/文件夹信息卡片 */}
+          {children
+            ? children
+            : itemTitle && (
+                <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-900/50">
+                  <div className="flex items-start gap-3">
+                    <div
+                      className={cn(
+                        'mt-0.5 flex-shrink-0 rounded-md p-2',
+                        isFolder
+                          ? 'bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400'
+                          : 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400',
+                      )}>
+                      {isFolder ? <Folder className="h-5 w-5" /> : <Bookmark className="h-5 w-5" />}
                     </div>
-                  )}
+                    <div className="min-w-0 flex-1 space-y-2 text-left">
+                      <div>
+                        <p className="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                          {isFolder ? '文件夹名称' : '书签标题'}
+                        </p>
+                        <p className="mt-1 font-medium text-gray-900 dark:text-gray-100">{itemTitle}</p>
+                      </div>
+                      {itemUrl && !isFolder && (
+                        <div>
+                          <p className="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                            链接地址
+                          </p>
+                          <div className="mt-1 flex items-start gap-2">
+                            <LinkIcon className="mt-0.5 h-4 w-4 flex-shrink-0 text-gray-400" />
+                            <p className="break-all text-sm text-gray-600 dark:text-gray-400">{itemUrl}</p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
-          )}
+              )}
         </div>
 
         {/* Actions */}

@@ -6,6 +6,7 @@ import { useDuplicates } from '../../hooks/useDuplicates';
 import { filterBookmarks } from '../../utils/bookmarkFilters';
 import { BatchOperationBar } from '../BatchOperationBar';
 import { BookmarkTree } from '../BookmarkTree';
+import { DuplicatePreviewDialog } from '../DuplicatePreview';
 import { SearchBar } from '../SearchBar';
 import { StatsCards } from '../StatsCards';
 import { RefreshCw, AlertCircle } from 'lucide-react';
@@ -19,6 +20,7 @@ import type React from 'react';
 export const BookmarkManager: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [showDuplicateDialog, setShowDuplicateDialog] = useState(false);
 
   // Hooks
   const {
@@ -91,11 +93,20 @@ export const BookmarkManager: React.FC = () => {
     setSelectedIds(new Set());
   };
 
-  const handleRemoveDuplicates = async () => {
-    const success = await removeDuplicates();
+  const handleRemoveDuplicates = () => {
+    setShowDuplicateDialog(true);
+  };
+
+  const handleConfirmRemoveDuplicates = async (duplicatesToRemove: typeof duplicates) => {
+    setShowDuplicateDialog(false);
+    const success = await removeDuplicates(duplicatesToRemove);
     if (success) {
       await loadBookmarks(true, true);
     }
+  };
+
+  const handleCancelRemoveDuplicates = () => {
+    setShowDuplicateDialog(false);
   };
 
   const handleExpandAll = () => {
@@ -181,6 +192,15 @@ export const BookmarkManager: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* 重复书签预览对话框 */}
+      {showDuplicateDialog && (
+        <DuplicatePreviewDialog
+          duplicates={duplicates}
+          onConfirm={handleConfirmRemoveDuplicates}
+          onCancel={handleCancelRemoveDuplicates}
+        />
+      )}
     </div>
   );
 };

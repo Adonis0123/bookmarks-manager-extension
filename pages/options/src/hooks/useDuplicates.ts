@@ -1,3 +1,4 @@
+import { buildBookmarkMap, getBookmarkPath } from '../utils/bookmarkPath';
 import { useMemo } from 'react';
 import type { BookmarkNode, DuplicateBookmark } from '../types/bookmark';
 
@@ -23,13 +24,27 @@ export const useDuplicates = (bookmarks: BookmarkNode[]) => {
 
     collectBookmarks(bookmarks);
 
+    // 构建书签映射用于获取路径
+    const bookmarkMap = buildBookmarkMap(bookmarks);
+
     const duplicateList: DuplicateBookmark[] = [];
     const urls = new Set<string>();
     let count = 0;
 
     urlMap.forEach((bookmarkList, url) => {
       if (bookmarkList.length > 1) {
-        duplicateList.push({ url, bookmarks: bookmarkList });
+        // 将书签列表转换为包含路径信息的格式
+        const items = bookmarkList.map((bookmark, index) => ({
+          bookmark,
+          path: getBookmarkPath(bookmark.id, bookmarkMap),
+          isKeep: index === 0, // 默认保留第一个
+        }));
+
+        duplicateList.push({
+          url,
+          title: bookmarkList[0].title || '未命名',
+          items,
+        });
         urls.add(url);
         count += bookmarkList.length - 1;
       }
@@ -43,20 +58,19 @@ export const useDuplicates = (bookmarks: BookmarkNode[]) => {
   }, [bookmarks]);
 
   /**
-   * 删除所有重复书签（保留每个 URL 的第一个）
+   * 删除标记为删除的重复书签
+   * @param duplicatesToRemove 包含删除标记的重复书签列表
    */
-  const removeDuplicates = async () => {
-    if (duplicates.length === 0) return;
-
-    if (!confirm(`确定要删除 ${duplicateCount} 个重复的书签吗？`)) {
-      return false;
-    }
+  const removeDuplicates = async (duplicatesToRemove: DuplicateBookmark[]) => {
+    if (duplicatesToRemove.length === 0) return false;
 
     try {
-      for (const dup of duplicates) {
-        // 跳过第一个，删除其余的
-        for (let i = 1; i < dup.bookmarks.length; i++) {
-          await chrome.bookmarks.remove(dup.bookmarks[i].id);
+      for (const dup of duplicatesToRemove) {
+        // 删除标记为不保留的书签
+        for (const item of dup.items) {
+          if (!item.isKeep) {
+            await chrome.bookmarks.remove(item.bookmark.id);
+          }
         }
       }
       return true;

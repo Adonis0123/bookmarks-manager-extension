@@ -10,9 +10,16 @@ export interface BookmarkNode {
   unmodifiable?: 'managed';
 }
 
+export interface DuplicateBookmarkItem {
+  bookmark: BookmarkNode;
+  path: string;
+  isKeep: boolean;
+}
+
 export interface DuplicateBookmark {
   url: string;
-  bookmarks: BookmarkNode[];
+  title: string;
+  items: DuplicateBookmarkItem[];
 }
 
 export interface BookmarkStats {
