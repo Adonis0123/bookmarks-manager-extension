@@ -6,12 +6,16 @@ interface UseBookmarkOperationsProps {
   bookmarks: BookmarkNode[];
   setBookmarks: React.Dispatch<React.SetStateAction<BookmarkNode[]>>;
   loadBookmarks: (preserveScroll?: boolean, skipLoading?: boolean) => Promise<void>;
+  onRecordDelete?: (node: BookmarkNode, parentId: string, index: number) => void;
+  onRecordMove?: (nodeId: string, oldParentId: string, oldIndex: number, newParentId: string, newIndex: number) => void;
+  onRecordUpdate?: (nodeId: string, oldTitle: string, newTitle: string) => void;
 }
 
 interface UseBookmarkOperationsReturn {
   deleteBookmark: (id: string) => Promise<void>;
   deleteSelectedBookmarks: (selectedIds: Set<string>) => Promise<void>;
   moveBookmark: (bookmarkId: string, newParentId: string, newIndex: number) => Promise<void>;
+  updateBookmark: (id: string, newTitle: string) => Promise<void>;
   exportBookmarks: () => void;
 }
 
@@ -22,6 +26,9 @@ export const useBookmarkOperations = ({
   bookmarks,
   setBookmarks,
   loadBookmarks,
+  onRecordDelete,
+  onRecordMove,
+  onRecordUpdate,
 }: UseBookmarkOperationsProps): UseBookmarkOperationsReturn => {
   /**
    * 删除单个书签或文件夹
@@ -47,6 +54,18 @@ export const useBookmarkOperations = ({
           return;
         }
 
+        // 获取完整的节点信息（包括子节点）用于历史记录
+        let fullNode: BookmarkNode = bookmark as BookmarkNode;
+        if (isFolder) {
+          const [subtree] = await chrome.bookmarks.getSubTree(id);
+          fullNode = subtree as BookmarkNode;
+        }
+
+        // 记录到历史
+        if (onRecordDelete && bookmark.parentId && bookmark.index !== undefined) {
+          onRecordDelete(fullNode, bookmark.parentId, bookmark.index);
+        }
+
         // 先在本地更新状态
         setBookmarks(prev => removeNodeFromTree(prev, id));
 
@@ -66,7 +85,7 @@ export const useBookmarkOperations = ({
         await loadBookmarks(true, true);
       }
     },
-    [setBookmarks, loadBookmarks],
+    [setBookmarks, loadBookmarks, onRecordDelete],
   );
 
   /**
@@ -127,6 +146,16 @@ export const useBookmarkOperations = ({
   const moveBookmark = useCallback(
     async (bookmarkId: string, newParentId: string, newIndex: number) => {
       try {
+        // 获取移动前的位置信息
+        const [bookmark] = await chrome.bookmarks.get(bookmarkId);
+        const oldParentId = bookmark.parentId || '0';
+        const oldIndex = bookmark.index || 0;
+
+        // 记录到历史
+        if (onRecordMove) {
+          onRecordMove(bookmarkId, oldParentId, oldIndex, newParentId, newIndex);
+        }
+
         // 移动书签
         await chrome.bookmarks.move(bookmarkId, {
           parentId: newParentId,
@@ -144,7 +173,41 @@ export const useBookmarkOperations = ({
         await loadBookmarks(true, true);
       }
     },
-    [setBookmarks, loadBookmarks],
+    [setBookmarks, loadBookmarks, onRecordMove],
+  );
+
+  /**
+   * 更新书签或文件夹标题
+   */
+  const updateBookmark = useCallback(
+    async (id: string, newTitle: string) => {
+      try {
+        // 获取旧标题用于历史记录
+        const [bookmark] = await chrome.bookmarks.get(id);
+        const oldTitle = bookmark.title;
+
+        // 记录到历史
+        if (onRecordUpdate && oldTitle !== newTitle) {
+          onRecordUpdate(id, oldTitle, newTitle);
+        }
+
+        // 更新书签标题
+        await chrome.bookmarks.update(id, {
+          title: newTitle,
+        });
+
+        // 使用 startTransition 避免阻塞 UI
+        const tree = await chrome.bookmarks.getTree();
+        startTransition(() => {
+          setBookmarks(tree[0].children || []);
+        });
+      } catch (error) {
+        console.error('Failed to update bookmark:', error);
+        alert('更新失败：' + (error as Error).message);
+        await loadBookmarks(true, true);
+      }
+    },
+    [setBookmarks, loadBookmarks, onRecordUpdate],
   );
 
   /**
@@ -165,6 +228,7 @@ export const useBookmarkOperations = ({
     deleteBookmark,
     deleteSelectedBookmarks,
     moveBookmark,
+    updateBookmark,
     exportBookmarks,
   };
 };

@@ -20,7 +20,11 @@ This is a Chrome/Firefox extension boilerplate based on React, TypeScript, Vite,
 - `pnpm lint` - Run ESLint across all packages
 - `pnpm lint:fix` - Fix linting issues automatically
 - `pnpm format` - Format code with Prettier
-- `pnpm type-check` - Run TypeScript type checking
+- `pnpm type-check` - Run TypeScript type checking for all packages
+- `pnpm type-check:options` - Run type checking only for options page
+- `pnpm type-check:popup` - Run type checking only for popup page
+- `pnpm type-check:sidepanel` - Run type checking only for sidepanel page
+- `pnpm --filter @extension/<package-name> type-check` - Run type checking for any specific package
 
 ### Testing
 - `pnpm e2e` - Run end-to-end tests with WebdriverIO

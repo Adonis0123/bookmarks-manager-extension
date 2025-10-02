@@ -13,7 +13,10 @@
       "Bash(pnpm lint:*)",
       "Bash(pnpm lint:fix:*)",
       "WebSearch",
-      "WebFetch(domain:stackoverflow.com)"
+      "WebFetch(domain:stackoverflow.com)",
+      "Bash(pnpm --filter @extension/options lint)",
+      "Bash(pnpm --filter @extension/options lint:fix)",
+      "Bash(pnpm --filter @extension/options build)"
     ],
     "deny": [],
     "ask": []

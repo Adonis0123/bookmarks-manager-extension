@@ -1,3 +1,4 @@
+import { useBookmarkHistory } from '../../hooks/useBookmarkHistory';
 import { useBookmarkOperations } from '../../hooks/useBookmarkOperations';
 import { useBookmarks } from '../../hooks/useBookmarks';
 import { useBookmarkStats } from '../../hooks/useBookmarkStats';
@@ -32,11 +33,17 @@ export const BookmarkManager: React.FC = () => {
     scrollContainerRef,
   } = useBookmarks();
 
-  const { deleteBookmark, deleteSelectedBookmarks, moveBookmark, exportBookmarks } = useBookmarkOperations({
-    bookmarks,
-    setBookmarks,
-    loadBookmarks,
-  });
+  const { canUndo, recordDelete, recordMove, recordUpdate, undo } = useBookmarkHistory();
+
+  const { deleteBookmark, deleteSelectedBookmarks, moveBookmark, updateBookmark, exportBookmarks } =
+    useBookmarkOperations({
+      bookmarks,
+      setBookmarks,
+      loadBookmarks,
+      onRecordDelete: recordDelete,
+      onRecordMove: recordMove,
+      onRecordUpdate: recordUpdate,
+    });
 
   const stats = useBookmarkStats(bookmarks);
   const { duplicates, duplicateUrls, duplicateCount, removeDuplicates } = useDuplicates(bookmarks);
@@ -99,6 +106,11 @@ export const BookmarkManager: React.FC = () => {
     collapseAll(selectedIds.size > 0 ? selectedIds : undefined);
   };
 
+  const handleUndo = async () => {
+    await undo();
+    await loadBookmarks(true, true);
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center p-8">
@@ -132,6 +144,8 @@ export const BookmarkManager: React.FC = () => {
           onSearchChange={setSearchQuery}
           onRefresh={() => loadBookmarks()}
           onExport={exportBookmarks}
+          onUndo={handleUndo}
+          canUndo={canUndo}
         />
       </div>
 
@@ -159,6 +173,7 @@ export const BookmarkManager: React.FC = () => {
             duplicateUrls={duplicateUrls}
             onDelete={deleteBookmark}
             onMove={moveBookmark}
+            onUpdate={updateBookmark}
           />
         ) : (
           <div className="py-8 text-center text-gray-500 dark:text-gray-400">

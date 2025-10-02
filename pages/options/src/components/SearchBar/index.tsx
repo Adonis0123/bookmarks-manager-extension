@@ -1,4 +1,4 @@
-import { Search, RefreshCw, Download } from 'lucide-react';
+import { Search, RefreshCw, Download, Undo } from 'lucide-react';
 import type React from 'react';
 
 interface SearchBarProps {
@@ -6,9 +6,18 @@ interface SearchBarProps {
   onSearchChange: (query: string) => void;
   onRefresh: () => void;
   onExport: () => void;
+  onUndo?: () => void;
+  canUndo?: boolean;
 }
 
-export const SearchBar: React.FC<SearchBarProps> = ({ searchQuery, onSearchChange, onRefresh, onExport }) => (
+export const SearchBar: React.FC<SearchBarProps> = ({
+  searchQuery,
+  onSearchChange,
+  onRefresh,
+  onExport,
+  onUndo,
+  canUndo = false,
+}) => (
   <div className="flex flex-col gap-4 md:flex-row">
     <div className="relative flex-1">
       <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 transform text-gray-400 dark:text-gray-500" />
@@ -22,6 +31,16 @@ export const SearchBar: React.FC<SearchBarProps> = ({ searchQuery, onSearchChang
     </div>
 
     <div className="flex gap-2">
+      {onUndo && (
+        <button
+          onClick={onUndo}
+          disabled={!canUndo}
+          className="flex items-center gap-2 rounded-lg bg-orange-600 px-4 py-2 text-white hover:bg-orange-700 disabled:cursor-not-allowed disabled:bg-gray-300 disabled:text-gray-500 dark:disabled:bg-gray-700 dark:disabled:text-gray-500">
+          <Undo className="h-4 w-4" />
+          撤销
+        </button>
+      )}
+
       <button
         onClick={onExport}
         className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700">

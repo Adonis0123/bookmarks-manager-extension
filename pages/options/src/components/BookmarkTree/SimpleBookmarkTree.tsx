@@ -1,6 +1,8 @@
-import { BookmarkIcon } from '../BookmarkIcon';
-import { cn, Tooltip } from '@extension/ui';
-import { Folder, FolderOpen, ChevronRight, ChevronDown, ExternalLink, Trash2 } from 'lucide-react';
+import { BookmarkDisplay } from './BookmarkDisplay';
+import { FolderDisplay } from './FolderDisplay';
+import { TreeItemActions } from './TreeItemActions';
+import { cn } from '@extension/ui';
+import { ChevronRight, ChevronDown } from 'lucide-react';
 import { useState } from 'react';
 import type { BookmarkNode } from '../../types/bookmark';
 import type React from 'react';
@@ -14,6 +16,7 @@ interface BookmarkTreeProps {
   duplicateUrls: Set<string>;
   onDelete: (id: string) => void;
   onMove: (itemId: string, targetParentId: string, targetIndex: number) => Promise<void>;
+  onUpdate?: (id: string, newTitle: string) => Promise<void>;
 }
 
 interface TreeItemProps {
@@ -25,6 +28,7 @@ interface TreeItemProps {
   onToggleFolder: (folderId: string) => void;
   duplicateUrls: Set<string>;
   onDelete: (id: string) => void;
+  onUpdate?: (id: string, newTitle: string) => Promise<void>;
   onDragStart: (node: BookmarkNode) => void;
   onDragOver: () => void;
   onDrop: (node: BookmarkNode) => void;
@@ -39,6 +43,7 @@ const TreeItem: React.FC<TreeItemProps> = ({
   onToggleFolder,
   duplicateUrls,
   onDelete,
+  onUpdate,
   onDragStart,
   onDragOver,
   onDrop,
@@ -48,6 +53,7 @@ const TreeItem: React.FC<TreeItemProps> = ({
   const isSelected = selectedIds.has(node.id);
   const isDuplicate = node.url ? duplicateUrls.has(node.url) : false;
   const [isDragOver, setIsDragOver] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
 
   const handleToggle = () => {
     if (isFolder) {
@@ -65,6 +71,21 @@ const TreeItem: React.FC<TreeItemProps> = ({
   const handleDelete = (e: React.MouseEvent) => {
     e.stopPropagation();
     onDelete(node.id);
+  };
+
+  const handleEdit = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsEditing(true);
+  };
+
+  const handleTitleChange = async (newTitle: string) => {
+    if (onUpdate) {
+      await onUpdate(node.id, newTitle);
+    }
+  };
+
+  const handleEditComplete = () => {
+    setIsEditing(false);
   };
 
   const handleDragStart = (e: React.DragEvent) => {
@@ -133,50 +154,40 @@ const TreeItem: React.FC<TreeItemProps> = ({
           className="flex min-w-0 flex-1 items-center gap-2 text-left"
           onClick={handleToggle}
           onKeyDown={e => {
-            if (e.key === 'Enter' || e.key === ' ') {
+            // 编辑模式下不拦截键盘事件
+            if (!isEditing && (e.key === 'Enter' || e.key === ' ')) {
               e.preventDefault();
               handleToggle();
             }
           }}>
           {isFolder ? (
-            <>
-              {isExpanded ? (
-                <FolderOpen className="h-4 w-4 flex-shrink-0 text-blue-600" />
-              ) : (
-                <Folder className="h-4 w-4 flex-shrink-0 text-blue-600" />
-              )}
-              <span className="truncate text-sm font-medium text-gray-900">{node.title || '无标题文件夹'}</span>
-              <span className="flex-shrink-0 text-xs text-gray-500">({node.children?.length || 0})</span>
-            </>
+            <FolderDisplay
+              title={node.title}
+              isExpanded={isExpanded}
+              childrenCount={node.children?.length || 0}
+              isEditing={isEditing}
+              onTitleChange={handleTitleChange}
+              onEditComplete={handleEditComplete}
+            />
           ) : (
-            <>
-              {node.url && <BookmarkIcon url={node.url} />}
-              <span className="flex-1 truncate text-left text-sm text-gray-900">
-                {node.title || node.url || '无标题'}
-              </span>
-              {isDuplicate && (
-                <span className="flex-shrink-0 rounded bg-yellow-200 px-2 py-0.5 text-xs text-yellow-800">重复</span>
-              )}
-            </>
+            <BookmarkDisplay
+              title={node.title}
+              url={node.url}
+              isDuplicate={isDuplicate}
+              isEditing={isEditing}
+              onTitleChange={handleTitleChange}
+              onEditComplete={handleEditComplete}
+            />
           )}
         </button>
 
         {/* 操作按钮 */}
-        <div className="flex flex-shrink-0 items-center gap-1">
-          {node.url && (
-            <Tooltip content="在新标签页打开">
-              <button onClick={handleOpen} className="rounded p-1 text-gray-600 hover:bg-gray-200">
-                <ExternalLink className="h-4 w-4" />
-              </button>
-            </Tooltip>
-          )}
-
-          <Tooltip content="删除">
-            <button onClick={handleDelete} className="rounded p-1 text-red-600 hover:bg-red-100">
-              <Trash2 className="h-4 w-4" />
-            </button>
-          </Tooltip>
-        </div>
+        <TreeItemActions
+          hasUrl={!!node.url}
+          onOpen={node.url ? handleOpen : undefined}
+          onEdit={onUpdate ? handleEdit : undefined}
+          onDelete={handleDelete}
+        />
       </div>
 
       {/* 子节点 */}
@@ -193,6 +204,7 @@ const TreeItem: React.FC<TreeItemProps> = ({
               onToggleFolder={onToggleFolder}
               duplicateUrls={duplicateUrls}
               onDelete={onDelete}
+              onUpdate={onUpdate}
               onDragStart={onDragStart}
               onDragOver={onDragOver}
               onDrop={onDrop}
@@ -213,6 +225,7 @@ export const SimpleBookmarkTree: React.FC<BookmarkTreeProps> = ({
   duplicateUrls,
   onDelete,
   onMove,
+  onUpdate,
 }) => {
   const [draggedNode, setDraggedNode] = useState<BookmarkNode | null>(null);
 
@@ -260,6 +273,7 @@ export const SimpleBookmarkTree: React.FC<BookmarkTreeProps> = ({
           onToggleFolder={onToggleFolder}
           duplicateUrls={duplicateUrls}
           onDelete={onDelete}
+          onUpdate={onUpdate}
           onDragStart={handleDragStart}
           onDragOver={handleDragOver}
           onDrop={handleDrop}
