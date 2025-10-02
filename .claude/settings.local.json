@@ -1,6 +1,18 @@
 {
   "permissions": {
-    "allow": ["Bash(pnpm module-manager:*)", "Bash(pnpm type-check:*)", "Bash(pnpm add:*)", "Bash(pnpm dev:*)"],
+    "allow": [
+      "Bash(pnpm module-manager:*)",
+      "Bash(pnpm type-check:*)",
+      "Bash(pnpm add:*)",
+      "Bash(pnpm dev:*)",
+      "Bash(pnpm exec turbo daemon:*)",
+      "WebFetch(domain:github.com)",
+      "Bash(pnpm remove:*)",
+      "Bash(pnpm build:*)",
+      "Bash(cat:*)",
+      "Bash(pnpm lint:*)",
+      "Bash(pnpm lint:fix:*)"
+    ],
     "deny": [],
     "ask": []
   }
