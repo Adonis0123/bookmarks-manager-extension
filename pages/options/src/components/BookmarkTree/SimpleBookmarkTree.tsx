@@ -1,5 +1,5 @@
 import { BookmarkIcon } from '../BookmarkIcon';
-import { cn } from '@extension/ui';
+import { cn, Tooltip } from '@extension/ui';
 import { Folder, FolderOpen, ChevronRight, ChevronDown, ExternalLink, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import type { BookmarkNode } from '../../types/bookmark';
@@ -164,14 +164,18 @@ const TreeItem: React.FC<TreeItemProps> = ({
         {/* 操作按钮 */}
         <div className="flex flex-shrink-0 items-center gap-1">
           {node.url && (
-            <button onClick={handleOpen} className="rounded p-1 text-gray-600 hover:bg-gray-200" title="在新标签页打开">
-              <ExternalLink className="h-4 w-4" />
-            </button>
+            <Tooltip content="在新标签页打开">
+              <button onClick={handleOpen} className="rounded p-1 text-gray-600 hover:bg-gray-200">
+                <ExternalLink className="h-4 w-4" />
+              </button>
+            </Tooltip>
           )}
 
-          <button onClick={handleDelete} className="rounded p-1 text-red-600 hover:bg-red-100" title="删除">
-            <Trash2 className="h-4 w-4" />
-          </button>
+          <Tooltip content="删除">
+            <button onClick={handleDelete} className="rounded p-1 text-red-600 hover:bg-red-100">
+              <Trash2 className="h-4 w-4" />
+            </button>
+          </Tooltip>
         </div>
       </div>
 

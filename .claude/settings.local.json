@@ -11,7 +11,8 @@
       "Bash(pnpm build:*)",
       "Bash(cat:*)",
       "Bash(pnpm lint:*)",
-      "Bash(pnpm lint:fix:*)"
+      "Bash(pnpm lint:fix:*)",
+      "WebSearch"
     ],
     "deny": [],
     "ask": []
