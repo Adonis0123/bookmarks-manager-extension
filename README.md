@@ -52,7 +52,7 @@ Bookmarks Manager 是一个现代化的浏览器书签管理扩展，提供了�
 
 1. 克隆仓库
 ```bash
-git clone https://github.com/your-username/bookmarks-manager.git
+git clone https://github.com/adonis/bookmarks-manager.git
 cd bookmarks-manager
 ```
 2. 安装依赖
@@ -168,9 +168,9 @@ bookmarks-manager/
 MIT License - 详见 [LICENSE](LICENSE) 文件
 
 ## 致谢
-
+https://github.com/Jonghakseo/chrome-extension-boilerplate-react-vite
 感谢所有贡献者的支持
 
 ---
 
-如有问题或建议，欢迎提交 [Issue](https://github.com/your-username/bookmarks-manager/issues) 或 [Pull Request](https://github.com/your-username/bookmarks-manager/pulls)！
+如有问题或建议，欢迎提交 [Issue](https://github.com/adonis/bookmarks-manager/issues) 或 [Pull Request](https://github.com/adonis/bookmarks-manager/pulls)！

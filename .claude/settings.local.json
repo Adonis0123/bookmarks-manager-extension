@@ -17,7 +17,8 @@
       "Bash(pnpm --filter @extension/options lint)",
       "Bash(pnpm --filter @extension/options lint:fix)",
       "Bash(pnpm --filter @extension/options build)",
-      "Bash(pnpm --filter @extension/options type-check)"
+      "Bash(pnpm --filter @extension/options type-check)",
+      "Bash(pnpm install:*)"
     ],
     "deny": [],
     "ask": []
