@@ -40,8 +40,8 @@ const manifest = {
   commands: {
     _execute_action: {
       suggested_key: {
-        default: 'Ctrl+Shift+B',
-        mac: 'Command+Shift+B',
+        default: 'Ctrl+B',
+        mac: 'Command+B',
       },
       description: 'Open bookmarks manager popup',
     },
