@@ -1,0 +1,256 @@
+import { useBookmarkHistory } from '../../hooks/useBookmarkHistory';
+import { useBookmarkOperations } from '../../hooks/useBookmarkOperations';
+import { useBookmarks } from '../../hooks/useBookmarks';
+import { useBookmarkStats } from '../../hooks/useBookmarkStats';
+import { useDuplicates } from '../../hooks/useDuplicates';
+import { filterBookmarks, findNodeById } from '../../utils/bookmarkFilters';
+import { BatchOperationBar } from '../BatchOperationBar';
+import { BookmarkTree } from '../BookmarkTree';
+import { CreateFolderDialog } from '../BookmarkTree/CreateFolderDialog';
+import { DuplicatePreviewDialog } from '../DuplicatePreview';
+import { SearchBar } from '../SearchBar';
+import { StatsCards } from '../StatsCards';
+import { RefreshCw, AlertCircle } from 'lucide-react';
+import { useEffect, useState, useMemo } from 'react';
+import type React from 'react';
+
+/**
+ * 书签管理器主容器组件
+ * 使用 React Complex Tree 提供完整的书签管理功能
+ */
+export const BookmarkManager: React.FC = () => {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [showDuplicateDialog, setShowDuplicateDialog] = useState(false);
+  const [showCreateRootFolderDialog, setShowCreateRootFolderDialog] = useState(false);
+  const [targetParentId, setTargetParentId] = useState<string>('1'); // 默认书签栏
+  const [targetParentName, setTargetParentName] = useState<string>('书签栏');
+
+  // Hooks
+  const {
+    bookmarks,
+    loading,
+    expandedFolders,
+    loadBookmarks,
+    toggleFolder,
+    expandAll,
+    collapseAll,
+    setBookmarks,
+    scrollContainerRef,
+  } = useBookmarks();
+
+  const { canUndo, recordDelete, recordMove, recordUpdate, undo } = useBookmarkHistory();
+
+  const { deleteBookmark, deleteSelectedBookmarks, moveBookmark, updateBookmark, createFolder, exportBookmarks } =
+    useBookmarkOperations({
+      bookmarks,
+      setBookmarks,
+      loadBookmarks,
+      onRecordDelete: recordDelete,
+      onRecordMove: recordMove,
+      onRecordUpdate: recordUpdate,
+    });
+
+  const stats = useBookmarkStats(bookmarks);
+  const { duplicates, duplicateUrls, duplicateCount, removeDuplicates } = useDuplicates(bookmarks);
+
+  // 初始加载
+  useEffect(() => {
+    loadBookmarks(false, false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // 过滤书签
+  const filteredBookmarks = useMemo(() => filterBookmarks(bookmarks, searchQuery), [bookmarks, searchQuery]);
+
+  // 选择处理
+  const handleSelect = (id: string) => {
+    const newSelectedIds = new Set(selectedIds);
+    if (newSelectedIds.has(id)) {
+      newSelectedIds.delete(id);
+    } else {
+      newSelectedIds.add(id);
+    }
+    setSelectedIds(newSelectedIds);
+  };
+
+  const handleSelectAll = () => {
+    if (selectedIds.size > 0) {
+      setSelectedIds(new Set());
+    } else {
+      const allIds = new Set<string>();
+      const collectIds = (nodes: typeof bookmarks) => {
+        nodes.forEach(node => {
+          allIds.add(node.id);
+          if (node.children) {
+            collectIds(node.children);
+          }
+        });
+      };
+      collectIds(filteredBookmarks);
+      setSelectedIds(allIds);
+    }
+  };
+
+  const handleDeleteSelected = async () => {
+    await deleteSelectedBookmarks(selectedIds);
+    setSelectedIds(new Set());
+  };
+
+  const handleRemoveDuplicates = () => {
+    setShowDuplicateDialog(true);
+  };
+
+  const handleConfirmRemoveDuplicates = async (duplicatesToRemove: typeof duplicates) => {
+    setShowDuplicateDialog(false);
+    const success = await removeDuplicates(duplicatesToRemove);
+    if (success) {
+      await loadBookmarks(true, true);
+    }
+  };
+
+  const handleCancelRemoveDuplicates = () => {
+    setShowDuplicateDialog(false);
+  };
+
+  const handleExpandAll = () => {
+    expandAll(selectedIds.size > 0 ? selectedIds : undefined);
+  };
+
+  const handleCollapseAll = () => {
+    collapseAll(selectedIds.size > 0 ? selectedIds : undefined);
+  };
+
+  const handleUndo = async () => {
+    await undo();
+    await loadBookmarks(true, true);
+  };
+
+  const handleCreateRootFolder = () => {
+    // 智能选择父文件夹：如果选中了文件夹，在选中的文件夹下创建，否则在书签栏下创建
+    let parentId = '1'; // 默认：书签栏
+    let parentName = '书签栏';
+
+    if (selectedIds.size > 0) {
+      // 遍历选中项，找到第一个文件夹
+      for (const selectedId of selectedIds) {
+        const node = findNodeById(bookmarks, selectedId);
+        if (node && node.children) {
+          // 找到文件夹
+          parentId = node.id;
+          parentName = node.title || '未命名文件夹';
+          break;
+        }
+      }
+    }
+
+    setTargetParentId(parentId);
+    setTargetParentName(parentName);
+    setShowCreateRootFolderDialog(true);
+  };
+
+  const handleConfirmCreateRootFolder = async (folderName: string) => {
+    // 使用智能选择的父文件夹 ID
+    await createFolder(targetParentId, folderName);
+    setShowCreateRootFolderDialog(false);
+    await loadBookmarks(true, true);
+  };
+
+  const handleCancelCreateRootFolder = () => {
+    setShowCreateRootFolderDialog(false);
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <RefreshCw className="h-8 w-8 animate-spin text-blue-600" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="mx-auto w-full max-w-6xl p-4">
+      <div className="mb-6">
+        <h1 className="mb-4 text-2xl font-bold text-gray-900 dark:text-gray-100">书签管理器</h1>
+
+        <StatsCards stats={{ ...stats, duplicateCount }} selectedCount={selectedIds.size} />
+
+        <BatchOperationBar
+          selectedCount={selectedIds.size}
+          totalCount={stats.totalCount}
+          duplicateCount={duplicateCount}
+          onSelectAll={handleSelectAll}
+          onDeleteSelected={handleDeleteSelected}
+          onRemoveDuplicates={handleRemoveDuplicates}
+          onExpandAll={handleExpandAll}
+          onCollapseAll={handleCollapseAll}
+          hasSelection={selectedIds.size > 0}
+          hasDuplicates={duplicates.length > 0}
+        />
+
+        <SearchBar
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+          onRefresh={() => loadBookmarks()}
+          onExport={exportBookmarks}
+          onCreateRootFolder={handleCreateRootFolder}
+          onUndo={handleUndo}
+          canUndo={canUndo}
+        />
+      </div>
+
+      {duplicates.length > 0 && (
+        <div className="mb-4 rounded-lg border border-yellow-200 bg-yellow-50 p-4 dark:border-yellow-800 dark:bg-yellow-900/20">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
+            <span className="text-sm text-gray-900 dark:text-gray-100">
+              发现 {duplicateCount} 个重复书签，你可以点击"去重"按钮清理它们
+            </span>
+          </div>
+        </div>
+      )}
+
+      <div
+        ref={scrollContainerRef}
+        className="max-h-[600px] overflow-y-auto rounded-lg border p-4 dark:border-gray-700 dark:bg-gray-800">
+        {filteredBookmarks.length > 0 ? (
+          <BookmarkTree
+            bookmarks={filteredBookmarks}
+            selectedIds={selectedIds}
+            onSelect={handleSelect}
+            expandedFolders={expandedFolders}
+            onToggleFolder={toggleFolder}
+            duplicateUrls={duplicateUrls}
+            onDelete={deleteBookmark}
+            onMove={moveBookmark}
+            onUpdate={updateBookmark}
+            onCreateFolder={createFolder}
+          />
+        ) : (
+          <div className="py-8 text-center text-gray-500 dark:text-gray-400">
+            {searchQuery ? '没有找到匹配的书签' : '暂无书签'}
+          </div>
+        )}
+      </div>
+
+      {/* 重复书签预览对话框 */}
+      {showDuplicateDialog && (
+        <DuplicatePreviewDialog
+          duplicates={duplicates}
+          onConfirm={handleConfirmRemoveDuplicates}
+          onCancel={handleCancelRemoveDuplicates}
+        />
+      )}
+
+      {/* 创建根文件夹对话框 */}
+      {showCreateRootFolderDialog && (
+        <CreateFolderDialog
+          onConfirm={handleConfirmCreateRootFolder}
+          onCancel={handleCancelCreateRootFolder}
+          defaultValue="新建文件夹"
+          parentFolderName={targetParentName}
+        />
+      )}
+    </div>
+  );
+};
